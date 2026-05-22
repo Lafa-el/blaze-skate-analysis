@@ -17,7 +17,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-
     <script>
         tailwind.config = {
             theme: {
@@ -221,9 +220,17 @@
                     <!-- 播放器控制栏 -->
                     <div class="mt-4 bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
                         <div class="flex flex-wrap items-center justify-between gap-3">
-                            <button id="bioPlayPauseBtn" class="bg-skating-pro hover:bg-purple-600 text-white font-bold py-2 px-5 rounded-lg flex items-center gap-2 text-sm transition-all active:scale-95">
-                                <i class="fa-solid fa-pause" id="playPauseIcon"></i> <span id="playPauseText">暂停</span>
-                            </button>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button id="bioPlayPauseBtn" class="bg-skating-pro hover:bg-purple-600 text-white font-bold py-2 px-5 rounded-lg flex items-center gap-2 text-sm transition-all active:scale-95">
+                                    <i class="fa-solid fa-pause" id="playPauseIcon"></i> <span id="playPauseText">暂停</span>
+                                </button>
+                                <button id="captureKeyframeBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 text-xs transition-all active:scale-95">
+                                    <i class="fa-solid fa-camera"></i> 采样当前帧
+                                </button>
+                                <button id="clearKeyframesBtn" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-lg flex items-center gap-2 text-xs transition-all active:scale-95">
+                                    <i class="fa-solid fa-trash-can"></i> 清空
+                                </button>
+                            </div>
                             
                             <div class="flex items-center gap-2 text-xs">
                                 <span class="text-slate-400"><i class="fa-solid fa-gauge-high mr-1"></i>视频分析速度:</span>
@@ -269,6 +276,15 @@
                              <p class="text-3xl font-black text-purple-400" id="liveRecoverySpeed">--</p>
                              <p class="text-[10px] text-slate-500 mt-1 font-mono">目标: 顶峰回收瞬爆</p>
                          </div>
+                    </div>
+
+                    <div class="mt-4 bg-slate-900/70 border border-slate-700 p-4 rounded-lg">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <h4 class="font-bold text-slate-300 text-xs uppercase tracking-wider"><i class="fa-solid fa-list-check mr-1 text-emerald-400"></i> 关键帧采样列表</h4>
+                            <span id="keyframeCountText" class="text-[10px] text-slate-500 font-mono">0 / 10</span>
+                        </div>
+                        <div id="keyframeSummary" class="text-xs text-slate-400 mb-3">暂停在关键帧，点击目标后采样；系统只汇总可判读帧。</div>
+                        <div id="keyframeList" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs"></div>
                     </div>
 
                     <!-- AI 控制台输出 -->
@@ -809,6 +825,10 @@
             lastTargetCom = null;
             poseJumpRejectCount = 0;
             manualTargetWarmupFrames = 0;
+            latestPoseMetrics = null;
+            pendingKeyframeCapture = false;
+            keyframeSamples = [];
+            renderKeyframeSamples();
             document.getElementById('targetLockBadge')?.classList.add('hidden');
             fileSelected.classList.add('hidden');
             uploadZone.classList.remove('hidden');
@@ -1118,6 +1138,10 @@
         let lastTargetCom = null;
         let poseJumpRejectCount = 0;
         let manualTargetWarmupFrames = 0;
+        let latestPoseMetrics = null;
+        let pendingKeyframeCapture = false;
+        let keyframeSamples = [];
+        const MAX_KEYFRAME_SAMPLES = 10;
         window.bioAnalysisStarted = false;
         window.currentBioVideoUrl = null;
 
@@ -1305,6 +1329,127 @@
             document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-skating-success">Target Lock</span>: 已按点击位置锁定目标，连续性保护已启用。`;
         }
 
+        function holdCurrentTarget(message = "检测结果突然跳离当前运动员，已暂时忽略这一帧。") {
+            document.getElementById('cvStatusText').innerText = "STATUS: TARGET HOLD";
+            document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-yellow-400">Target Hold</span>: ${message}`;
+        }
+
+        function classifyPoseIssue(metrics) {
+            const issues = [];
+            if (metrics.kneeAngle > 115) issues.push("支撑膝角度偏大");
+            if (metrics.leanAngle > 52) issues.push("身体倾角偏大");
+            if (metrics.pelvisHeight > 62) issues.push("骨盆高度偏高");
+            if (!issues.length) issues.push("姿态可接受");
+            return issues.join(" / ");
+        }
+
+        function addKeyframeSample(sample) {
+            keyframeSamples.push({
+                id: Date.now() + Math.random(),
+                ...sample
+            });
+            if (keyframeSamples.length > MAX_KEYFRAME_SAMPLES) {
+                keyframeSamples = keyframeSamples.slice(-MAX_KEYFRAME_SAMPLES);
+            }
+            renderKeyframeSamples();
+        }
+
+        function captureReadableKeyframe(metrics) {
+            addKeyframeSample({
+                readable: true,
+                time: metrics.time,
+                leanAngle: metrics.leanAngle,
+                kneeAngle: metrics.kneeAngle,
+                pelvisHeight: metrics.pelvisHeight,
+                recoverySpeed: metrics.recoverySpeed,
+                supportSide: metrics.supportSide,
+                issue: classifyPoseIssue(metrics)
+            });
+            pendingKeyframeCapture = false;
+        }
+
+        function captureUnreadableKeyframe(reason) {
+            const videoElement = document.getElementById('inputVideo');
+            addKeyframeSample({
+                readable: false,
+                time: videoElement ? formatTime(videoElement.currentTime) : "--:--",
+                reason
+            });
+            pendingKeyframeCapture = false;
+        }
+
+        function renderKeyframeSamples() {
+            const listEl = document.getElementById('keyframeList');
+            const countEl = document.getElementById('keyframeCountText');
+            const summaryEl = document.getElementById('keyframeSummary');
+            if (!listEl || !countEl || !summaryEl) return;
+
+            countEl.textContent = `${keyframeSamples.length} / ${MAX_KEYFRAME_SAMPLES}`;
+            if (!keyframeSamples.length) {
+                listEl.innerHTML = '';
+                summaryEl.textContent = "暂停在关键帧，点击目标后采样；系统只汇总可判读帧。";
+                return;
+            }
+
+            const readableSamples = keyframeSamples.filter((item) => item.readable);
+            const unreadableCount = keyframeSamples.length - readableSamples.length;
+            if (readableSamples.length) {
+                const avgKnee = Math.round(readableSamples.reduce((sum, item) => sum + item.kneeAngle, 0) / readableSamples.length);
+                const avgLean = Math.round(readableSamples.reduce((sum, item) => sum + item.leanAngle, 0) / readableSamples.length);
+                const highKneeCount = readableSamples.filter((item) => item.kneeAngle > 115).length;
+                const highLeanCount = readableSamples.filter((item) => item.leanAngle > 52).length;
+                summaryEl.textContent = `可判读 ${readableSamples.length} 帧；不可判读 ${unreadableCount} 帧。平均膝角 ${avgKnee}°，平均倾角 ${avgLean}°；膝角偏大 ${highKneeCount} 帧，倾角偏大 ${highLeanCount} 帧。`;
+            } else {
+                summaryEl.textContent = `已采样 ${keyframeSamples.length} 帧，但全部为不可判读帧。建议避开遮挡、多人重叠或运动模糊时刻。`;
+            }
+
+            listEl.innerHTML = keyframeSamples.map((item, index) => {
+                if (!item.readable) {
+                    return `<div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                        <div class="flex justify-between text-red-300 font-bold"><span>#${index + 1} ${item.time}</span><span>不可判读</span></div>
+                        <p class="text-slate-400 mt-1">${item.reason}</p>
+                    </div>`;
+                }
+                return `<div class="bg-slate-800/70 border border-slate-700 rounded-lg p-3">
+                    <div class="flex justify-between text-emerald-300 font-bold"><span>#${index + 1} ${item.time}</span><span>${item.supportSide}</span></div>
+                    <div class="grid grid-cols-3 gap-2 mt-2 font-mono text-[11px] text-slate-300">
+                        <span>Lean ${item.leanAngle}°</span>
+                        <span>Knee ${item.kneeAngle}°</span>
+                        <span>Pelvis ${item.pelvisHeight}%</span>
+                    </div>
+                    <p class="text-slate-400 mt-2">${item.issue}</p>
+                </div>`;
+            }).join('');
+        }
+
+        function requestKeyframeCapture(videoElement) {
+            if (!videoElement || !videoElement.src || videoElement.readyState < 2) return;
+            if (!lastTargetCom) {
+                document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-yellow-400">Keyframe</span>: 请先点击目标运动员，再采样当前帧。`;
+                return;
+            }
+            videoElement.pause();
+            bioFrameLoopScheduled = false;
+            document.getElementById('playPauseIcon').className = "fa-solid fa-play";
+            document.getElementById('playPauseText').innerText = "播放";
+            pendingKeyframeCapture = true;
+            latestPoseMetrics = null;
+            document.getElementById('cvStatusText').innerText = "STATUS: KEYFRAME SAMPLING";
+            if (!isModelReady || !poseModel) {
+                document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-yellow-400">Keyframe</span>: 模型仍在初始化，请稍后再采样当前帧。`;
+                pendingKeyframeCapture = false;
+                return;
+            }
+            if (!bioPoseSendInFlight) {
+                bioPoseSendInFlight = true;
+                sendPoseFrame(videoElement).catch((error) => {
+                    console.warn("Keyframe capture skipped:", error);
+                    captureUnreadableKeyframe("当前帧分析失败，目标不可判读。");
+                    bioPoseSendInFlight = false;
+                });
+            }
+        }
+
         function onResults(results) {
             const canvasElement = document.getElementById('outputCanvas');
             const canvasCtx = canvasElement.getContext('2d');
@@ -1350,8 +1495,11 @@
                     let landmarks = mapLandmarksFromAnalysisCrop(results.poseLandmarks);
                     const trackingCom = getPoseCom(landmarks);
                     if (!acceptTrackedCom(trackingCom)) {
-                        document.getElementById('cvStatusText').innerText = "STATUS: TARGET HOLD";
-                        document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-yellow-400">Target Hold</span>: 检测结果突然跳离当前运动员，已暂时忽略这一帧。`;
+                        holdCurrentTarget("检测结果突然跳离当前运动员，已暂时忽略这一帧。");
+                        if (pendingKeyframeCapture) {
+                            captureUnreadableKeyframe("遮挡、多人重叠或目标跳变，当前帧不可判读。");
+                        }
+                        bioPoseSendInFlight = false;
                         return;
                     }
 
@@ -1424,6 +1572,17 @@
 
                     const peakSpeed = Math.max(speedL, speedR);
                     document.getElementById('liveRecoverySpeed').innerText = peakSpeed;
+                    latestPoseMetrics = {
+                        time: formatTime(document.getElementById('inputVideo').currentTime),
+                        leanAngle,
+                        kneeAngle: kneeFlexionAngle,
+                        pelvisHeight: Number(pelvisHeightPct),
+                        recoverySpeed: peakSpeed,
+                        supportSide: supportLeg.side
+                    };
+                    if (pendingKeyframeCapture) {
+                        captureReadableKeyframe(latestPoseMetrics);
+                    }
 
                     const rawCom = {
                         x: (shoulderMidX + hipMidX) / 2,
@@ -1469,7 +1628,12 @@
                         > <span class="text-skating-success"> Tracking</span>: 自动目标跟随中，姿态数据正在更新。`;
                     }
                     document.getElementById('cvStatusText').innerText = "STATUS: TRACKING LIVE";
+                    bioPoseSendInFlight = false;
                 } else {
+                    if (pendingKeyframeCapture) {
+                        captureUnreadableKeyframe("当前帧没有稳定骨架，目标不可判读。");
+                    }
+                    bioPoseSendInFlight = false;
                     document.getElementById('liveKneeAngle').innerText = "--°";
                     document.getElementById('liveLeanAngle').innerText = "--°";
                     document.getElementById('livePelvisHeight').innerText = "--%";
@@ -1478,6 +1642,10 @@
             } catch (error) {
                 console.warn("Pose result skipped:", error);
                 document.getElementById('cvStatusText').innerText = "STATUS: RESULT SKIPPED";
+                if (pendingKeyframeCapture) {
+                    captureUnreadableKeyframe("当前帧关键点缺失或计算失败，目标不可判读。");
+                }
+                bioPoseSendInFlight = false;
             } finally {
                 canvasCtx.restore();
             }
@@ -1523,8 +1691,6 @@
                     .catch((error) => {
                         console.warn("Video frame analysis skipped:", error);
                         document.getElementById('cvStatusText').innerText = "STATUS: FRAME SKIPPED";
-                    })
-                    .finally(() => {
                         bioPoseSendInFlight = false;
                     });
             }
@@ -1556,6 +1722,7 @@
             poseFrameCanvas.width = Math.max(1, Math.round(sw * scale));
             poseFrameCanvas.height = Math.max(1, Math.round(sh * scale));
             const sourceCtx = poseFrameCanvas.getContext('2d', { willReadFrequently: true });
+            sourceCtx.clearRect(0, 0, poseFrameCanvas.width, poseFrameCanvas.height);
             sourceCtx.drawImage(videoElement, sx, sy, sw, sh, 0, 0, poseFrameCanvas.width, poseFrameCanvas.height);
             return poseModel.send({image: poseFrameCanvas});
         }
@@ -1566,6 +1733,8 @@
             const videoUpload = document.getElementById('videoUpload');
             const analyzeBioBtn = document.getElementById('analyzeBioBtn');
             const bioPlayPauseBtn = document.getElementById('bioPlayPauseBtn');
+            const captureKeyframeBtn = document.getElementById('captureKeyframeBtn');
+            const clearKeyframesBtn = document.getElementById('clearKeyframesBtn');
             const playPauseIcon = document.getElementById('playPauseIcon');
             const playPauseText = document.getElementById('playPauseText');
             const playbackSpeed = document.getElementById('playbackSpeed');
@@ -1577,7 +1746,16 @@
             const calibStatusBadge = document.getElementById('calibStatusBadge');
             const videoViewport = document.getElementById('videoViewport');
 
+            renderKeyframeSamples();
             uploadZone.addEventListener('click', () => videoUpload.click());
+
+            captureKeyframeBtn.addEventListener('click', () => requestKeyframeCapture(videoElement));
+            clearKeyframesBtn.addEventListener('click', () => {
+                keyframeSamples = [];
+                latestPoseMetrics = null;
+                pendingKeyframeCapture = false;
+                renderKeyframeSamples();
+            });
 
             videoViewport.addEventListener('click', (event) => {
                 if (!window.bioAnalysisStarted || !videoElement.src || videoElement.readyState < 2) return;
@@ -1586,8 +1764,8 @@
                 if (videoElement.paused && isModelReady && poseModel && !bioPoseSendInFlight) {
                     bioPoseSendInFlight = true;
                     sendPoseFrame(videoElement)
-                        .catch((error) => console.warn("Click-lock pose frame skipped:", error))
-                        .finally(() => {
+                        .catch((error) => {
+                            console.warn("Click-lock pose frame skipped:", error);
                             bioPoseSendInFlight = false;
                         });
                 }
@@ -1687,8 +1865,8 @@
                     if (videoElement.paused && isModelReady && poseModel && !bioPoseSendInFlight) {
                         bioPoseSendInFlight = true;
                         await sendPoseFrame(videoElement)
-                            .catch((error) => console.warn("Scrub pose frame skipped:", error))
-                            .finally(() => {
+                            .catch((error) => {
+                                console.warn("Scrub pose frame skipped:", error);
                                 bioPoseSendInFlight = false;
                             });
                     }
