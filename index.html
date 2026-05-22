@@ -910,11 +910,48 @@
                             <input type="text" id="equipBendRear" placeholder="例如 20" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-sm placeholder:text-slate-600">
                         </div>
                     </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                        <h4 class="text-xs font-bold text-slate-300 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square text-skating-accent"></i> 调整事件与调后反馈
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] text-slate-500 mb-1 font-bold uppercase">本次记录类型</label>
+                                <select id="equipAdjustmentType" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-skating-accent">
+                                    <option value="记录未调整">记录未调整</option>
+                                    <option value="重磨 Radius/Rocker">重磨 Radius/Rocker</option>
+                                    <option value="调整 Offset">调整 Offset</option>
+                                    <option value="调整 Bend">调整 Bend</option>
+                                    <option value="换刀">换刀</option>
+                                    <option value="换鞋">换鞋</option>
+                                    <option value="综合调整">综合调整</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-500 mb-1 font-bold uppercase">上冰反馈评级</label>
+                                <select id="equipFeedbackRating" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-skating-accent">
+                                    <option value="未上冰验证">未上冰验证</option>
+                                    <option value="明显改善">明显改善</option>
+                                    <option value="小幅改善">小幅改善</option>
+                                    <option value="无明显变化">无明显变化</option>
+                                    <option value="变差，需要回退">变差，需要回退</option>
+                                </select>
+                            </div>
+                        </div>
+                        <textarea id="equipAdjustmentNotes" rows="2" placeholder="记录具体调整或教练反馈：例如只微调左脚后跟 Offset，低速弯道咬冰改善。" class="mt-3 w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-skating-accent placeholder:text-slate-600 resize-none"></textarea>
+                    </div>
                 </div>
 
-                <button id="analyzeEquipBtn" class="w-full bg-gradient-to-r from-skating-accent to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_15px_rgba(249,115,22,0.3)] flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-list-check"></i> 生成器材检查清单
-                </button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button id="analyzeEquipBtn" class="w-full bg-gradient-to-r from-skating-accent to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_15px_rgba(249,115,22,0.3)] flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-list-check"></i> 生成清单
+                    </button>
+                    <button id="saveEquipBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fa-solid fa-cloud-arrow-up"></i> 保存记录
+                    </button>
+                </div>
+                <p id="equipSaveStatus" class="text-[10px] text-slate-500 font-mono text-center">先生成检查清单，再保存到历史档案。</p>
             </div>
 
             <div class="lg:col-span-8 space-y-6">
@@ -963,6 +1000,35 @@
                         <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
                         <p><strong>注意：</strong>不要仅凭本页面直接重磨或移动刀架。任何器材调整都应由教练或专业磨刀师复核，并通过低速直道、低速弯道和录像姿态检查逐步验证。</p>
                     </div>
+                </div>
+
+                <div class="bg-skating-card rounded-2xl p-6 border border-slate-700 shadow-xl">
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+                        <div>
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left text-skating-accent"></i> 器材历史档案
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-1">保存后可选择两次记录，比较调刀前后数据与滑感反馈。</p>
+                        </div>
+                        <span id="equipHistorySyncBadge" class="text-[10px] px-2 py-1 rounded-full border border-slate-700 text-slate-400 bg-slate-900">本地档案</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold uppercase">对比记录 A</label>
+                            <select id="equipCompareA" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-skating-accent"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold uppercase">对比记录 B</label>
+                            <select id="equipCompareB" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-skating-accent"></select>
+                        </div>
+                    </div>
+                    <button id="compareEquipBtn" type="button" class="w-full md:w-auto bg-skating-accent hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all">
+                        <i class="fa-solid fa-code-compare mr-1"></i> 生成对比
+                    </button>
+
+                    <div id="equipCompareOutput" class="mt-4 hidden bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs text-slate-300 leading-relaxed"></div>
+                    <div id="equipHistoryList" class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
             </div>
         </main>
@@ -1361,7 +1427,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, runTransaction, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, runTransaction, increment, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase 动态容灾载入：Vercel 构建会生成 window.__BLAZE_FIREBASE_CONFIG__
         let firebaseConfig;
@@ -1448,6 +1514,37 @@
                         }
                     }, (error) => {
                         console.error("Tasks sync failed:", error);
+                    });
+
+                    // C. 器材档案云端保存与历史对比
+                    const equipmentRecordsCol = collection(db, 'artifacts', appId, 'users', userId, 'equipmentRecords');
+                    window.blazeEquipmentCloud = {
+                        saveRecord: async (record) => {
+                            await addDoc(equipmentRecordsCol, {
+                                ...record,
+                                savedAt: serverTimestamp()
+                            });
+                        },
+                        deleteRecord: async (record) => {
+                            const recordDocId = record.cloudId || record.id;
+                            await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'equipmentRecords', recordDocId));
+                        }
+                    };
+                    onSnapshot(query(equipmentRecordsCol, orderBy('createdAt', 'desc')), (querySnap) => {
+                        const records = [];
+                        querySnap.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            records.push({
+                                ...data,
+                                id: data.id || docSnap.id,
+                                cloudId: docSnap.id
+                            });
+                        });
+                        if (typeof window.setEquipmentHistory === 'function') {
+                            window.setEquipmentHistory(records, 'cloud');
+                        }
+                    }, (error) => {
+                        console.error("Equipment records sync failed:", error);
                     });
 
                     // 🌟 接管全局 window.checkTask 函数，实现无缝云同步
@@ -2771,8 +2868,282 @@
             return hints.length ? hints : ['当前已填数据未触发明显异常规则。建议保存本次记录，结合上冰反馈做调整前后对比。'];
         }
 
+        const EQUIPMENT_HISTORY_STORAGE_KEY = 'blaze-equipment-history-v1';
+        let equipmentHistoryRecords = [];
+        let currentEquipmentRecord = null;
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[char]));
+        }
+
+        function loadLocalEquipmentHistory() {
+            try {
+                const raw = localStorage.getItem(EQUIPMENT_HISTORY_STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (error) {
+                console.warn('Equipment local history load failed:', error);
+                return [];
+            }
+        }
+
+        function saveLocalEquipmentHistory(records) {
+            try {
+                localStorage.setItem(EQUIPMENT_HISTORY_STORAGE_KEY, JSON.stringify(records.slice(0, 30)));
+            } catch (error) {
+                console.warn('Equipment local history save failed:', error);
+            }
+        }
+
+        function setSaveEquipmentButtonState(state) {
+            const saveBtn = document.getElementById('saveEquipBtn');
+            if (!saveBtn) return;
+            const states = {
+                idle: {
+                    disabled: true,
+                    className: 'w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed',
+                    html: '<i class="fa-solid fa-cloud-arrow-up"></i> 保存记录'
+                },
+                ready: {
+                    disabled: false,
+                    className: 'w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2',
+                    html: '<i class="fa-solid fa-cloud-arrow-up"></i> 保存记录'
+                },
+                saving: {
+                    disabled: true,
+                    className: 'w-full bg-slate-700 border border-slate-500 text-slate-200 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-wait',
+                    html: '<i class="fa-solid fa-circle-notch fa-spin"></i> 保存中...'
+                },
+                saved: {
+                    disabled: true,
+                    className: 'w-full bg-emerald-500 border border-emerald-400 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.35)] cursor-default',
+                    html: '<i class="fa-solid fa-check"></i> 保存完成'
+                },
+                error: {
+                    disabled: false,
+                    className: 'w-full bg-red-500 hover:bg-red-600 border border-red-400 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2',
+                    html: '<i class="fa-solid fa-triangle-exclamation"></i> 重试保存'
+                }
+            };
+            const next = states[state] || states.idle;
+            saveBtn.disabled = next.disabled;
+            saveBtn.className = next.className;
+            saveBtn.innerHTML = next.html;
+        }
+
+        function normalizeEquipmentRecord(record) {
+            return {
+                ...record,
+                id: record.id || `equip-${Date.now()}`,
+                createdAt: record.createdAt || new Date().toISOString()
+            };
+        }
+
+        function setEquipmentHistory(records, source = 'local') {
+            equipmentHistoryRecords = records
+                .map(normalizeEquipmentRecord)
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 30);
+            renderEquipmentHistory(source);
+        }
+
+        function summarizeRecordLabel(record) {
+            const date = new Date(record.createdAt);
+            const dateText = Number.isNaN(date.getTime()) ? '未记录日期' : date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+            return `${dateText} · ${record.adjustmentType || '记录'} · ${record.focus || '复核清单'}`;
+        }
+
+        function renderEquipmentHistory(source = 'local') {
+            const listEl = document.getElementById('equipHistoryList');
+            const selectA = document.getElementById('equipCompareA');
+            const selectB = document.getElementById('equipCompareB');
+            const badge = document.getElementById('equipHistorySyncBadge');
+            if (!listEl || !selectA || !selectB || !badge) return;
+
+            badge.textContent = source === 'cloud' ? '云端同步' : '本地档案';
+            badge.className = source === 'cloud'
+                ? 'text-[10px] px-2 py-1 rounded-full border border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+                : 'text-[10px] px-2 py-1 rounded-full border border-slate-700 text-slate-400 bg-slate-900';
+
+            const optionsHtml = equipmentHistoryRecords.length
+                ? equipmentHistoryRecords.map((record) => `<option value="${record.id}">${escapeHtml(summarizeRecordLabel(record))}</option>`).join('')
+                : '<option value="">暂无历史记录</option>';
+            selectA.innerHTML = optionsHtml;
+            selectB.innerHTML = optionsHtml;
+            if (equipmentHistoryRecords[1]) selectB.value = equipmentHistoryRecords[1].id;
+
+            if (!equipmentHistoryRecords.length) {
+                listEl.innerHTML = `
+                    <div class="md:col-span-2 bg-slate-900 border border-dashed border-slate-700 rounded-xl p-6 text-center text-sm text-slate-500">
+                        还没有保存过器材记录。生成清单后点击“保存记录”，这里会出现历史档案。
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = equipmentHistoryRecords.map((record) => `
+                <article class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <div>
+                            <h4 class="text-sm font-bold text-white">${escapeHtml(record.focus || '器材复核')}</h4>
+                            <p class="text-[10px] text-slate-500 font-mono">${escapeHtml(new Date(record.createdAt).toLocaleString('zh-CN'))}</p>
+                        </div>
+                        <span class="text-[10px] text-skating-accent bg-orange-500/10 border border-orange-500/20 rounded-full px-2 py-1">${escapeHtml(record.feedbackRating || '未验证')}</span>
+                    </div>
+                    <p class="text-xs text-slate-300 mb-2">${escapeHtml(record.adjustmentType || '记录未调整')}</p>
+                    <p class="text-[11px] text-slate-400">${escapeHtml(record.symptomText || '未记录症状')}</p>
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                        <span>刀长: ${escapeHtml(record.bladeLength || '未记录')}</span>
+                        <span>体重: ${escapeHtml(record.weight || '未记录')}kg</span>
+                        <span>Offset: ${escapeHtml(record.offsetSummary || '未记录')}</span>
+                        <span>Bend: ${escapeHtml(record.bendSummary || '未记录')}</span>
+                    </div>
+                    <button type="button" data-delete-equipment-id="${escapeHtml(record.id)}" class="mt-3 text-[10px] font-bold text-slate-500 hover:text-red-400 transition-colors">
+                        <i class="fa-solid fa-trash-can mr-1"></i> 删除记录
+                    </button>
+                </article>
+            `).join('');
+        }
+
+        async function deleteEquipmentRecord(recordId) {
+            const record = equipmentHistoryRecords.find((item) => item.id === recordId);
+            if (!record) return;
+            const ok = window.confirm('确定删除这条器材历史记录吗？删除后无法在本页面恢复。');
+            if (!ok) return;
+
+            try {
+                if (record.cloudId && window.blazeEquipmentCloud?.deleteRecord) {
+                    await window.blazeEquipmentCloud.deleteRecord(record);
+                } else {
+                    setEquipmentHistory(equipmentHistoryRecords.filter((item) => item.id !== recordId), 'local');
+                    saveLocalEquipmentHistory(equipmentHistoryRecords);
+                }
+                const output = document.getElementById('equipCompareOutput');
+                if (output) output.classList.add('hidden');
+            } catch (error) {
+                console.error('Equipment delete failed:', error);
+                alert('删除失败，请稍后再试。');
+            }
+        }
+
+        function readingMap(readings = []) {
+            return readings.reduce((acc, item) => {
+                acc[item.point] = parseGaugeNumber(item.value);
+                return acc;
+            }, {});
+        }
+
+        function compareNumericField(label, olderValue, newerValue, unit = '') {
+            const oldNum = parseGaugeNumber(olderValue);
+            const newNum = parseGaugeNumber(newerValue);
+            if (oldNum === null || newNum === null) return `${label}: 数据不足，无法比较。`;
+            const delta = Number((newNum - oldNum).toFixed(2));
+            const sign = delta > 0 ? '+' : '';
+            return `${label}: ${oldNum}${unit} -> ${newNum}${unit}，变化 ${sign}${delta}${unit}。`;
+        }
+
+        function compareRockerSide(label, olderReadings, newerReadings) {
+            const oldMap = readingMap(olderReadings);
+            const newMap = readingMap(newerReadings);
+            const changed = [];
+            for (let point = -8; point <= 8; point += 1) {
+                if (oldMap[point] === null || oldMap[point] === undefined || newMap[point] === null || newMap[point] === undefined) continue;
+                const delta = newMap[point] - oldMap[point];
+                if (Math.abs(delta) >= 4) changed.push(`${point > 0 ? '+' : ''}${point}: ${delta > 0 ? '+' : ''}${delta}`);
+            }
+            return changed.length
+                ? `${label} Radius/Rocker 明显变化点: ${changed.join(' / ')} ticks。`
+                : `${label} Radius/Rocker 在 -8 到 +8 未见 >=4 ticks 的明显变化。`;
+        }
+
+        function renderEquipmentComparison() {
+            const output = document.getElementById('equipCompareOutput');
+            const selectA = document.getElementById('equipCompareA');
+            const selectB = document.getElementById('equipCompareB');
+            if (!output || !selectA || !selectB) return;
+            const recordA = equipmentHistoryRecords.find((record) => record.id === selectA.value);
+            const recordB = equipmentHistoryRecords.find((record) => record.id === selectB.value);
+
+            if (!recordA || !recordB || recordA.id === recordB.id) {
+                output.classList.remove('hidden');
+                output.innerHTML = '<span class="text-yellow-400">请选择两条不同的历史记录进行对比。</span>';
+                return;
+            }
+
+            const older = new Date(recordA.createdAt) <= new Date(recordB.createdAt) ? recordA : recordB;
+            const newer = older.id === recordA.id ? recordB : recordA;
+            const lines = [
+                `对比区间：${new Date(older.createdAt).toLocaleDateString('zh-CN')} -> ${new Date(newer.createdAt).toLocaleDateString('zh-CN')}`,
+                `调整事件：${older.adjustmentType || '未记录'} -> ${newer.adjustmentType || '未记录'}`,
+                `上冰反馈：${older.feedbackRating || '未验证'} -> ${newer.feedbackRating || '未验证'}`,
+                compareNumericField('体重', older.weight, newer.weight, 'kg'),
+                compareRockerSide('左脚', older.leftRockerReadings, newer.leftRockerReadings),
+                compareRockerSide('右脚', older.rightRockerReadings, newer.rightRockerReadings),
+                compareNumericField('左前 Offset', older.offsets?.leftFront, newer.offsets?.leftFront, 'mm'),
+                compareNumericField('左后 Offset', older.offsets?.leftRear, newer.offsets?.leftRear, 'mm'),
+                compareNumericField('右前 Offset', older.offsets?.rightFront, newer.offsets?.rightFront, 'mm'),
+                compareNumericField('右后 Offset', older.offsets?.rightRear, newer.offsets?.rightRear, 'mm'),
+                compareNumericField('头段 Bend', older.bend?.front, newer.bend?.front, ' ticks'),
+                compareNumericField('中段 Bend', older.bend?.middle, newer.bend?.middle, ' ticks'),
+                compareNumericField('后段 Bend', older.bend?.rear, newer.bend?.rear, ' ticks')
+            ];
+
+            output.classList.remove('hidden');
+            output.innerHTML = `
+                <h4 class="text-sm font-bold text-white mb-2"><i class="fa-solid fa-code-compare text-skating-accent mr-1"></i> 调整前后对比摘要</h4>
+                <ul class="list-disc pl-5 space-y-1">${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
+                <p class="mt-3 text-slate-500">建议把这份对比和 Tab1 视频关键帧、Tab2 分段成绩一起看，确认器材调整是否真的改善动作和速度。</p>`;
+        }
+
+        async function saveCurrentEquipmentRecord() {
+            const statusEl = document.getElementById('equipSaveStatus');
+            if (!currentEquipmentRecord) {
+                if (statusEl) statusEl.textContent = '请先生成器材检查清单。';
+                return;
+            }
+
+            setSaveEquipmentButtonState('saving');
+            if (statusEl) statusEl.textContent = '正在保存器材记录...';
+            const recordToSave = normalizeEquipmentRecord({
+                ...currentEquipmentRecord,
+                id: `equip-${Date.now()}`,
+                createdAt: new Date().toISOString()
+            });
+
+            try {
+                let saved = false;
+                if (window.blazeEquipmentCloud?.saveRecord) {
+                    await window.blazeEquipmentCloud.saveRecord(recordToSave);
+                    saved = true;
+                    if (statusEl) statusEl.textContent = '已保存到云端器材档案。';
+                } else {
+                    setEquipmentHistory([recordToSave, ...equipmentHistoryRecords], 'local');
+                    saveLocalEquipmentHistory(equipmentHistoryRecords);
+                    saved = true;
+                    if (statusEl) statusEl.textContent = 'Firebase 未连接，已保存到本机浏览器档案。';
+                }
+                if (saved) setSaveEquipmentButtonState('saved');
+            } catch (error) {
+                console.error('Equipment save failed:', error);
+                setEquipmentHistory([recordToSave, ...equipmentHistoryRecords], 'local');
+                saveLocalEquipmentHistory(equipmentHistoryRecords);
+                setSaveEquipmentButtonState('saved');
+                if (statusEl) statusEl.textContent = '云端保存失败，已先保存到本机浏览器档案。';
+            }
+        }
+
+        window.setEquipmentHistory = setEquipmentHistory;
+        window.renderEquipmentHistory = renderEquipmentHistory;
+        window.deleteEquipmentRecord = deleteEquipmentRecord;
+
         document.addEventListener('DOMContentLoaded', () => {
             const analyzeEquipBtn = document.getElementById('analyzeEquipBtn');
+            const saveEquipBtn = document.getElementById('saveEquipBtn');
+            const compareEquipBtn = document.getElementById('compareEquipBtn');
             const symptomTextEl = document.getElementById('equipSymptomText');
             const symptomTemplates = {
                 slide: "弯道咬冰不足，弯中有向外侧滑的感觉。",
@@ -2795,6 +3166,16 @@
                     btn.classList.remove('border-slate-700', 'text-slate-300', 'bg-slate-900');
                     btn.classList.add('border-skating-accent', 'text-skating-accent', 'bg-orange-500/10');
                 });
+            });
+
+            setEquipmentHistory(loadLocalEquipmentHistory(), 'local');
+            setSaveEquipmentButtonState('idle');
+            saveEquipBtn?.addEventListener('click', saveCurrentEquipmentRecord);
+            compareEquipBtn?.addEventListener('click', renderEquipmentComparison);
+            document.getElementById('equipHistoryList')?.addEventListener('click', (event) => {
+                const deleteBtn = event.target.closest('[data-delete-equipment-id]');
+                if (!deleteBtn) return;
+                deleteEquipmentRecord(deleteBtn.dataset.deleteEquipmentId);
             });
 
             analyzeEquipBtn.addEventListener('click', () => {
@@ -2835,6 +3216,9 @@
                 const disciplineText = '短道速滑';
                 const symptomText = symptomTextEl.value.trim() || '未记录具体反馈';
                 const symptomKey = selectedSymptomTemplate;
+                const adjustmentType = document.getElementById('equipAdjustmentType').value;
+                const feedbackRating = document.getElementById('equipFeedbackRating').value;
+                const adjustmentNotes = document.getElementById('equipAdjustmentNotes').value.trim();
 
                 document.getElementById('equipEmptyState').classList.add('hidden');
                 document.getElementById('equipResults').classList.remove('hidden');
@@ -2882,6 +3266,40 @@
                     }
                 };
                 const advice = symptomAdvice[symptomKey] || symptomAdvice.slide;
+                currentEquipmentRecord = {
+                    athlete: 'Lindsay',
+                    discipline: disciplineText,
+                    focus: advice.focus,
+                    symptomKey,
+                    symptomText,
+                    height: heightRaw,
+                    weight: weightRaw,
+                    bladeLength,
+                    leftRockerReadings,
+                    rightRockerReadings,
+                    rockerSummary: `${summarizeRockerReadings('左脚', leftRockerReadings)}\n${summarizeRockerReadings('右脚', rightRockerReadings)}`,
+                    offsets: {
+                        leftFront: offsetLeftFront,
+                        leftRear: offsetLeftRear,
+                        rightFront: offsetRightFront,
+                        rightRear: offsetRightRear
+                    },
+                    offsetSummary,
+                    bend: {
+                        front: bendFront,
+                        middle: bendMiddle,
+                        rear: bendRear
+                    },
+                    bendSummary,
+                    ruleHints,
+                    adjustmentType,
+                    feedbackRating,
+                    adjustmentNotes,
+                    missingCore
+                };
+                setSaveEquipmentButtonState('ready');
+                const saveStatus = document.getElementById('equipSaveStatus');
+                if (saveStatus) saveStatus.textContent = '清单已生成，可以保存到历史档案。';
 
                 titleEl.innerHTML = advice.focus;
                 titleEl.className = missingCore ? "text-yellow-400 font-extrabold" : "text-skating-accent font-extrabold";
@@ -2896,6 +3314,8 @@
                 descEl.innerHTML = `&gt; <span class="text-skating-accent">EQUIPMENT LOG</span>:<br>
                     项目：<strong>${disciplineText}</strong>；症状：<strong>${symptomText}</strong><br>
                     身高：<strong>${heightRaw || '未记录'}cm</strong>；体重：<strong>${weightRaw || '未记录'}kg</strong>；刀长：<strong>${bladeLength}</strong><br>
+                    调整事件：<strong>${adjustmentType}</strong>；上冰反馈：<strong>${feedbackRating}</strong><br>
+                    调整备注：<strong>${adjustmentNotes || '未记录'}</strong><br>
                     Radius/Rocker：<br><strong>${rockerSummary}</strong><br>
                     Offset：<strong>${offsetSummary}</strong>；Bend：<strong>${bendSummary}</strong><br>
                     <span class="text-slate-400">结论：</span>当前信息适合生成<strong>复核清单</strong>，不直接判定器材是否错误。建议结合低速测试、录像和磨刀师测量后再调整。<br>
