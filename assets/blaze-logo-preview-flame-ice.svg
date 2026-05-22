@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BLAZE SKATE LAB logo preview">
+  <defs>
+    <radialGradient id="iceGlow" cx="50%" cy="74%" r="48%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#dffcf4" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#10b981" stop-opacity="0.08"/>
+    </radialGradient>
+    <linearGradient id="flame" x1="190" y1="72" x2="320" y2="336" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.32" stop-color="#c4b5fd"/>
+      <stop offset="0.68" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="flameCore" x1="230" y1="148" x2="280" y2="304" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.58" stop-color="#ede9fe"/>
+      <stop offset="1" stop-color="#a7f3d0"/>
+    </linearGradient>
+    <linearGradient id="reflection" x1="256" y1="302" x2="256" y2="444" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.36"/>
+      <stop offset="0.52" stop-color="#10b981" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="softBlur" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="108" fill="#f8fafc"/>
+  <ellipse cx="256" cy="374" rx="186" ry="70" fill="url(#iceGlow)"/>
+  <ellipse cx="256" cy="405" rx="148" ry="22" fill="#0ea5e9" opacity="0.08"/>
+
+  <path d="M180 389c44 24 106 27 154 4 23-11 37-27 41-43-52 23-119 22-184-6-13 13-16 29-11 45Z" fill="#10b981" opacity="0.08"/>
+
+  <g transform="translate(0 10)">
+    <path d="M178 314c31-66 83-88 85-154 1-31-12-58-31-87 58 25 93 65 104 119 11-38 36-72 76-96-10 66 43 96 36 167-7 70-65 118-154 132 50-39 59-88 20-146-19 50-59 83-120 99 32-48 20-82-16-34Z" fill="url(#flame)"/>
+    <path d="M239 333c35-31 44-75 27-128 35 25 53 59 53 101 20-20 34-47 43-80 14 74-31 120-123 107Z" fill="url(#flameCore)" opacity="0.95"/>
+  </g>
+
+  <g transform="translate(0 746) scale(1 -0.58)" opacity="0.74">
+    <path d="M178 314c31-66 83-88 85-154 1-31-12-58-31-87 58 25 93 65 104 119 11-38 36-72 76-96-10 66 43 96 36 167-7 70-65 118-154 132 50-39 59-88 20-146-19 50-59 83-120 99 32-48 20-82-16-34Z" fill="url(#reflection)" filter="url(#softBlur)"/>
+  </g>
+
+  <ellipse cx="256" cy="373" rx="118" ry="14" fill="#ffffff" opacity="0.46"/>
+  <ellipse cx="256" cy="379" rx="174" ry="24" fill="#10b981" opacity="0.09"/>
+</svg>

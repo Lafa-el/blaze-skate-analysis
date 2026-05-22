@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BLAZE SKATE LAB realistic flame preview">
+  <defs>
+    <linearGradient id="bg" x1="104" y1="72" x2="410" y2="438" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#effdf8"/>
+    </linearGradient>
+    <linearGradient id="flameOuter" x1="251" y1="70" x2="251" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.24" stop-color="#c4b5fd"/>
+      <stop offset="0.58" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="flameInner" x1="252" y1="148" x2="252" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.44" stop-color="#ede9fe"/>
+      <stop offset="1" stop-color="#bbf7d0"/>
+    </linearGradient>
+    <linearGradient id="ice" x1="128" y1="382" x2="390" y2="382" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e0f2fe" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#10b981" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#e0f2fe" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="reflection" x1="256" y1="330" x2="256" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.20"/>
+      <stop offset="0.6" stop-color="#10b981" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="blur" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+
+  <path d="M257 66c-10 54-52 82-52 137 0 28 12 50 32 67-43-9-77-44-80-93-34 45-45 88-34 127 15 54 69 91 133 91 74 0 130-45 137-108 5-47-14-85-57-115 8 48-6 85-41 110 23-83-2-153-38-216Z" fill="url(#flameOuter)"/>
+  <path d="M257 150c-8 42-39 64-38 104 0 22 9 39 26 52-27-4-49-24-57-52-13 26-15 50-5 70 13 26 40 42 74 42 43 0 73-24 78-61 4-29-7-53-33-75 3 36-8 63-34 79 14-60 4-106-11-159Z" fill="url(#flameInner)" opacity="0.96"/>
+
+  <path d="M136 382c66 18 150 19 252 2" fill="none" stroke="url(#ice)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M178 397c50 8 103 8 159 0" fill="none" stroke="#0ea5e9" stroke-width="4" stroke-linecap="round" opacity="0.18"/>
+
+  <g transform="translate(0 742) scale(1 -0.48)" opacity="0.62">
+    <path d="M257 66c-10 54-52 82-52 137 0 28 12 50 32 67-43-9-77-44-80-93-34 45-45 88-34 127 15 54 69 91 133 91 74 0 130-45 137-108 5-47-14-85-57-115 8 48-6 85-41 110 23-83-2-153-38-216Z" fill="url(#reflection)" filter="url(#blur)"/>
+  </g>
+</svg>
