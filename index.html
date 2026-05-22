@@ -11,6 +11,16 @@
     <link rel="icon" type="image/svg+xml" href="/assets/blaze-skate-lab-icon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/blaze-skate-lab-icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/blaze-skate-lab-icon-192.png">
+    <script>
+        (function() {
+            const savedMode = localStorage.getItem('blaze-theme-mode') || 'auto';
+            const hour = new Date().getHours();
+            const timeTheme = hour >= 6 && hour < 19 ? 'light' : 'dark';
+            const theme = savedMode === 'auto' ? timeTheme : savedMode;
+            document.documentElement.dataset.theme = theme;
+            document.documentElement.dataset.themeMode = savedMode;
+        })();
+    </script>
     <!-- 引入 Tailwind CSS 进行极速流线型UI设计 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Chart.js 用于渲染配速折线图 -->
@@ -47,7 +57,41 @@
     </script>
     
     <style>
-        body { background-color: #0f172a; color: #f8fafc; -webkit-font-smoothing: antialiased; }
+        :root {
+            --app-bg: #0f172a;
+            --app-surface: #1e293b;
+            --app-surface-soft: rgba(30, 41, 59, 0.72);
+            --app-panel: #0f172a;
+            --app-border: #334155;
+            --app-text: #f8fafc;
+            --app-muted: #94a3b8;
+            --app-muted-strong: #cbd5e1;
+            --app-input: #0f172a;
+        }
+        :root[data-theme="light"] {
+            --app-bg: #eef7fb;
+            --app-surface: #ffffff;
+            --app-surface-soft: rgba(255, 255, 255, 0.78);
+            --app-panel: #f8fcff;
+            --app-border: #cbdcea;
+            --app-text: #0f172a;
+            --app-muted: #64748b;
+            --app-muted-strong: #334155;
+            --app-input: #ffffff;
+        }
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(139, 92, 246, 0.14), transparent 34rem),
+                linear-gradient(180deg, var(--app-bg), var(--app-bg));
+            color: var(--app-text);
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+        :root[data-theme="light"] body {
+            background:
+                radial-gradient(circle at top left, rgba(14, 165, 233, 0.15), transparent 30rem),
+                linear-gradient(180deg, #f7fcff 0%, var(--app-bg) 100%);
+        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .neon-glow { box-shadow: 0 0 15px rgba(14, 165, 233, 0.4); }
@@ -63,6 +107,65 @@
         .tab-content { display: none !important; }
         .tab-content.active { display: grid !important; animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        :root[data-theme="light"] .bg-skating-card,
+        :root[data-theme="light"] .bg-slate-800,
+        :root[data-theme="light"] .bg-slate-800\/50,
+        :root[data-theme="light"] .bg-slate-800\/60,
+        :root[data-theme="light"] .bg-slate-800\/70,
+        :root[data-theme="light"] .bg-slate-800\/80 {
+            background-color: var(--app-surface) !important;
+        }
+        :root[data-theme="light"] .bg-skating-card\/50,
+        :root[data-theme="light"] .bg-slate-900,
+        :root[data-theme="light"] .bg-slate-900\/70,
+        :root[data-theme="light"] .bg-slate-950\/80 {
+            background-color: var(--app-panel) !important;
+        }
+        :root[data-theme="light"] .border-slate-700,
+        :root[data-theme="light"] .border-slate-700\/50,
+        :root[data-theme="light"] .border-slate-800,
+        :root[data-theme="light"] .border-slate-600 {
+            border-color: var(--app-border) !important;
+        }
+        :root[data-theme="light"] .text-white,
+        :root[data-theme="light"] .text-slate-200,
+        :root[data-theme="light"] .text-slate-300 {
+            color: var(--app-text) !important;
+        }
+        :root[data-theme="light"] .text-slate-400,
+        :root[data-theme="light"] .text-slate-500 {
+            color: var(--app-muted) !important;
+        }
+        :root[data-theme="light"] input,
+        :root[data-theme="light"] select,
+        :root[data-theme="light"] textarea {
+            background-color: var(--app-input) !important;
+            color: var(--app-text) !important;
+            border-color: var(--app-border) !important;
+        }
+        :root[data-theme="light"] .shadow-xl {
+            box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08) !important;
+        }
+        :root[data-theme="light"] #bioResults,
+        :root[data-theme="light"] #tab-pacing > div,
+        :root[data-theme="light"] #tab-planning > div,
+        :root[data-theme="light"] #tab-equipment > div {
+            background-color: var(--app-surface) !important;
+            color: var(--app-text);
+        }
+        :root[data-theme="light"] #videoViewport,
+        :root[data-theme="light"] #inputVideo {
+            background-color: #0f172a !important;
+        }
+        .theme-toggle-btn {
+            background: var(--app-surface-soft);
+            border: 1px solid var(--app-border);
+            color: var(--app-muted-strong);
+        }
+        .theme-toggle-btn:hover {
+            color: var(--app-text);
+            border-color: #8b5cf6;
+        }
     </style>
 </head>
 
@@ -78,15 +181,21 @@
                 <p class="text-xs text-slate-400 font-mono text-skating-success">SPEED SKATING ANALYTICS SYSTEM</p>
             </div>
         </div>
-        <!-- 🌟 升级：绑定 Lindsay 的真实云端数据 -->
-        <div class="flex items-center gap-4 bg-skating-card py-2 px-4 rounded-full border border-slate-700">
-            <div class="w-8 h-8 rounded-full bg-slate-600 overflow-hidden border border-slate-500 relative">
-                <div class="absolute inset-0 bg-purple-500/20 animate-pulse"></div>
-                <img src="https://placehold.co/100x100/1e293b/a855f7?text=Lin" alt="Lindsay Avatar" class="w-full h-full object-cover">
-            </div>
-            <div class="text-sm">
-                <p class="font-semibold text-white">Lindsay <span class="text-xs text-slate-400 font-normal ml-1" id="lindsayAgeBadge">冰龄计算中</span></p>
-                <p class="text-xs text-skating-accent font-medium"><i class="fa-solid fa-star mr-1"></i><span id="globalPoints">0</span> 积分</p>
+        <div class="flex items-center gap-3">
+            <button id="themeToggleBtn" type="button" class="theme-toggle-btn rounded-full px-3 py-2 text-xs font-bold flex items-center gap-2 transition-all active:scale-95">
+                <i id="themeToggleIcon" class="fa-solid fa-circle-half-stroke"></i>
+                <span id="themeToggleText">自动</span>
+            </button>
+            <!-- 🌟 升级：绑定 Lindsay 的真实云端数据 -->
+            <div class="flex items-center gap-4 bg-skating-card py-2 px-4 rounded-full border border-slate-700">
+                <div class="w-8 h-8 rounded-full bg-slate-600 overflow-hidden border border-slate-500 relative">
+                    <div class="absolute inset-0 bg-purple-500/20 animate-pulse"></div>
+                    <img src="https://placehold.co/100x100/1e293b/a855f7?text=Lin" alt="Lindsay Avatar" class="w-full h-full object-cover">
+                </div>
+                <div class="text-sm">
+                    <p class="font-semibold text-white">Lindsay <span class="text-xs text-slate-400 font-normal ml-1" id="lindsayAgeBadge">冰龄计算中</span></p>
+                    <p class="text-xs text-skating-accent font-medium"><i class="fa-solid fa-star mr-1"></i><span id="globalPoints">0</span> 积分</p>
+                </div>
             </div>
         </div>
     </header>
@@ -776,6 +885,42 @@
             };
         }
 
+        function getTimeBasedTheme() {
+            const hour = new Date().getHours();
+            return hour >= 6 && hour < 19 ? 'light' : 'dark';
+        }
+
+        function applyThemeMode(mode = localStorage.getItem('blaze-theme-mode') || 'auto') {
+            const normalizedMode = ['auto', 'light', 'dark'].includes(mode) ? mode : 'auto';
+            const theme = normalizedMode === 'auto' ? getTimeBasedTheme() : normalizedMode;
+            document.documentElement.dataset.theme = theme;
+            document.documentElement.dataset.themeMode = normalizedMode;
+            localStorage.setItem('blaze-theme-mode', normalizedMode);
+            updateThemeToggleUI(normalizedMode, theme);
+        }
+
+        function updateThemeToggleUI(mode, theme) {
+            const icon = document.getElementById('themeToggleIcon');
+            const text = document.getElementById('themeToggleText');
+            if (!icon || !text) return;
+            if (mode === 'auto') {
+                icon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+                text.textContent = theme === 'light' ? '自动 日间' : '自动 夜间';
+            } else if (mode === 'light') {
+                icon.className = 'fa-solid fa-sun';
+                text.textContent = '日间';
+            } else {
+                icon.className = 'fa-solid fa-moon';
+                text.textContent = '夜间';
+            }
+        }
+
+        function cycleThemeMode() {
+            const currentMode = document.documentElement.dataset.themeMode || localStorage.getItem('blaze-theme-mode') || 'auto';
+            const nextMode = currentMode === 'auto' ? 'light' : (currentMode === 'light' ? 'dark' : 'auto');
+            applyThemeMode(nextMode);
+        }
+
         // 2. 完美的 Tab 切换逻辑
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -976,8 +1121,15 @@
         window.calculateSkatingAge = calculateSkatingAge;
         window.getUSSpeedskatingDivision = getUSSpeedskatingDivision;
         window.updateSkatingAgeBadge = updateSkatingAgeBadge;
+        window.applyThemeMode = applyThemeMode;
+        window.cycleThemeMode = cycleThemeMode;
 
-        document.addEventListener('DOMContentLoaded', updateSkatingAgeBadge);
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSkatingAgeBadge();
+            applyThemeMode();
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            if (themeToggleBtn) themeToggleBtn.addEventListener('click', cycleThemeMode);
+        });
     </script>
 
     <script src="./firebase-config.js"></script>
