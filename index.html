@@ -205,9 +205,12 @@
                     </div>
                     
                     <!-- 视频与物理大屏 HUD 叠加渲染区 -->
-                    <div class="w-full bg-black rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-800 aspect-video transition-all duration-500" id="videoViewport">
+                    <div class="w-full bg-black rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-800 aspect-video transition-all duration-500 cursor-crosshair" id="videoViewport">
                         <video id="inputVideo" playsinline muted class="absolute inset-0 w-full h-full object-contain"></video>
                         <canvas id="outputCanvas" class="absolute inset-0 w-full h-full object-contain pointer-events-none"></canvas>
+                        <div id="targetLockBadge" class="absolute left-3 top-3 z-10 hidden bg-slate-950/80 border border-skating-pro/60 text-skating-neon rounded-lg px-2.5 py-1 text-[10px] font-mono pointer-events-none">
+                            TARGET LOCK
+                        </div>
                         
                         <div id="loadingModel" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-20">
                             <i class="fa-solid fa-circle-notch fa-spin text-4xl text-skating-pro mb-3"></i>
@@ -802,6 +805,11 @@
             }
             videoElement.src = '';
             window.bioAnalysisStarted = false;
+            smoothedCom = null;
+            lastTargetCom = null;
+            poseJumpRejectCount = 0;
+            manualTargetWarmupFrames = 0;
+            document.getElementById('targetLockBadge')?.classList.add('hidden');
             fileSelected.classList.add('hidden');
             uploadZone.classList.remove('hidden');
             analyzeBioBtn.disabled = true;
@@ -820,6 +828,7 @@
             document.getElementById('durationTimeUI').innerText = "00:00";
             document.getElementById('playPauseIcon').className = "fa-solid fa-pause";
             document.getElementById('playPauseText').innerText = "暂停";
+            canvasElement.classList.add('pointer-events-none');
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         }
 
@@ -1094,6 +1103,21 @@
         let bioFrameLoopRunning = false;
         let bioFrameLoopScheduled = false;
         let bioPoseSendInFlight = false;
+        let lastPoseFrameAt = 0;
+        const POSE_FRAME_INTERVAL_MS = 180;
+        const COM_SMOOTHING = 0.28;
+        const COM_MAX_JUMP = 0.18;
+        const TARGET_CROP_WIDTH = 0.62;
+        const TARGET_CROP_HEIGHT = 0.92;
+        const TARGET_REACQUIRE_AFTER = 7;
+        const MANUAL_LOCK_WARMUP_FRAMES = 5;
+        const MANUAL_LOCK_MAX_JUMP = 0.34;
+        const poseFrameCanvas = document.createElement('canvas');
+        let poseAnalysisCrop = { x: 0, y: 0, w: 1, h: 1 };
+        let smoothedCom = null;
+        let lastTargetCom = null;
+        let poseJumpRejectCount = 0;
+        let manualTargetWarmupFrames = 0;
         window.bioAnalysisStarted = false;
         window.currentBioVideoUrl = null;
 
@@ -1103,9 +1127,6 @@
             if (videoElement && videoElement.readyState >= 2) {
                 canvasElement.width = videoElement.videoWidth;
                 canvasElement.height = videoElement.videoHeight;
-                if (videoElement.paused && isModelReady && poseModel) {
-                    poseModel.send({image: videoElement});
-                }
             }
         }
         window.addEventListener('resize', resizeCanvas);
@@ -1176,149 +1197,290 @@
             }
         }
 
+        function getPoseCom(landmarks) {
+            const lShoulder = landmarks[11], rShoulder = landmarks[12];
+            const lHip = landmarks[23], rHip = landmarks[24];
+            if (![lShoulder, rShoulder, lHip, rHip].every(Boolean)) return null;
+            const shoulderMidX = (lShoulder.x + rShoulder.x) / 2;
+            const shoulderMidY = (lShoulder.y + rShoulder.y) / 2;
+            const hipMidX = (lHip.x + rHip.x) / 2;
+            const hipMidY = (lHip.y + rHip.y) / 2;
+            return {
+                x: (shoulderMidX + hipMidX) / 2,
+                y: (shoulderMidY + hipMidY) / 2
+            };
+        }
+
+        function acceptTrackedCom(nextCom) {
+            if (!nextCom || !Number.isFinite(nextCom.x) || !Number.isFinite(nextCom.y)) return false;
+            if (lastTargetCom) {
+                const jump = Math.hypot(nextCom.x - lastTargetCom.x, nextCom.y - lastTargetCom.y);
+                const maxJump = manualTargetWarmupFrames > 0 ? MANUAL_LOCK_MAX_JUMP : COM_MAX_JUMP;
+                if (jump > maxJump) {
+                    poseJumpRejectCount += 1;
+                    if (poseJumpRejectCount <= TARGET_REACQUIRE_AFTER) return false;
+                    lastTargetCom = null;
+                    smoothedCom = null;
+                    manualTargetWarmupFrames = 0;
+                }
+            }
+            poseJumpRejectCount = 0;
+            if (manualTargetWarmupFrames > 0) manualTargetWarmupFrames -= 1;
+            lastTargetCom = lastTargetCom
+                ? {
+                    x: lastTargetCom.x + (nextCom.x - lastTargetCom.x) * 0.36,
+                    y: lastTargetCom.y + (nextCom.y - lastTargetCom.y) * 0.36
+                }
+                : nextCom;
+            return true;
+        }
+
+        function smoothComPoint(nextCom) {
+            if (!nextCom || !Number.isFinite(nextCom.x) || !Number.isFinite(nextCom.y)) return smoothedCom;
+            smoothedCom = smoothedCom
+                ? {
+                    x: smoothedCom.x + (nextCom.x - smoothedCom.x) * COM_SMOOTHING,
+                    y: smoothedCom.y + (nextCom.y - smoothedCom.y) * COM_SMOOTHING
+                }
+                : nextCom;
+            return smoothedCom;
+        }
+
+        function buildAnalysisCrop() {
+            const hasTarget = lastTargetCom && poseJumpRejectCount < TARGET_REACQUIRE_AFTER;
+            const cropWidth = hasTarget ? TARGET_CROP_WIDTH : 0.74;
+            const cropHeight = hasTarget ? TARGET_CROP_HEIGHT : 1;
+            const centerX = hasTarget ? lastTargetCom.x : 0.5;
+            const centerY = hasTarget ? lastTargetCom.y : 0.5;
+            const x = Math.max(0, Math.min(1 - cropWidth, centerX - cropWidth / 2));
+            const y = Math.max(0, Math.min(1 - cropHeight, centerY - cropHeight / 2));
+            return { x, y, w: cropWidth, h: cropHeight };
+        }
+
+        function mapLandmarksFromAnalysisCrop(landmarks) {
+            const crop = poseAnalysisCrop || { x: 0, y: 0, w: 1, h: 1 };
+            return landmarks.map((pt) => ({
+                ...pt,
+                x: crop.x + pt.x * crop.w,
+                y: crop.y + pt.y * crop.h
+            }));
+        }
+
+        function getVideoPointFromPointer(event, videoElement, viewportElement) {
+            const rect = viewportElement.getBoundingClientRect();
+            const videoWidth = videoElement.videoWidth || 16;
+            const videoHeight = videoElement.videoHeight || 9;
+            const videoAspect = videoWidth / videoHeight;
+            const boxAspect = rect.width / rect.height;
+            let renderWidth = rect.width;
+            let renderHeight = rect.height;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            if (boxAspect > videoAspect) {
+                renderWidth = rect.height * videoAspect;
+                offsetX = (rect.width - renderWidth) / 2;
+            } else {
+                renderHeight = rect.width / videoAspect;
+                offsetY = (rect.height - renderHeight) / 2;
+            }
+
+            const x = (event.clientX - rect.left - offsetX) / renderWidth;
+            const y = (event.clientY - rect.top - offsetY) / renderHeight;
+            if (x < 0 || x > 1 || y < 0 || y > 1) return null;
+            return { x, y };
+        }
+
+        function lockTargetAt(point) {
+            if (!point) return;
+            lastTargetCom = {
+                x: Math.max(0, Math.min(1, point.x)),
+                y: Math.max(0, Math.min(1, point.y))
+            };
+            smoothedCom = lastTargetCom;
+            poseJumpRejectCount = 0;
+            manualTargetWarmupFrames = MANUAL_LOCK_WARMUP_FRAMES;
+            document.getElementById('targetLockBadge')?.classList.remove('hidden');
+            document.getElementById('cvStatusText').innerText = "STATUS: TARGET LOCKED";
+            document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-skating-success">Target Lock</span>: 已按点击位置锁定目标，连续性保护已启用。`;
+        }
+
         function onResults(results) {
             const canvasElement = document.getElementById('outputCanvas');
             const canvasCtx = canvasElement.getContext('2d');
             const gravityGridToggle = document.getElementById('gravityGridToggle');
-            const videoElement = document.getElementById('inputVideo');
 
             canvasCtx.save();
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            try {
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-            // 绘制智能重力网格
-            if (gravityGridToggle && gravityGridToggle.checked) {
-                const w = canvasElement.width;
-                const h = canvasElement.height;
-                canvasCtx.strokeStyle = Math.abs(tiltCorrectionAngle) <= 1.0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(249, 115, 22, 0.15)';
-                canvasCtx.lineWidth = 1;
-                
-                for (let i = 1; i < 4; i++) {
+                // 绘制智能重力网格
+                if (gravityGridToggle && gravityGridToggle.checked) {
+                    const w = canvasElement.width;
+                    const h = canvasElement.height;
+                    canvasCtx.strokeStyle = Math.abs(tiltCorrectionAngle) <= 1.0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(249, 115, 22, 0.15)';
+                    canvasCtx.lineWidth = 1;
+
+                    for (let i = 1; i < 4; i++) {
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo((w / 4) * i, 0); canvasCtx.lineTo((w / 4) * i, h);
+                        canvasCtx.moveTo(0, (h / 4) * i); canvasCtx.lineTo(w, (h / 4) * i);
+                        canvasCtx.stroke();
+                    }
+
                     canvasCtx.beginPath();
-                    canvasCtx.moveTo((w / 4) * i, 0); canvasCtx.lineTo((w / 4) * i, h);
-                    canvasCtx.moveTo(0, (h / 4) * i); canvasCtx.lineTo(w, (h / 4) * i);
+                    canvasCtx.arc(w / 2, h / 2, 45, 0, 2 * Math.PI);
+                    canvasCtx.strokeStyle = Math.abs(tiltCorrectionAngle) <= 1.0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(249, 115, 22, 0.4)';
+                    canvasCtx.lineWidth = 1.5;
                     canvasCtx.stroke();
+
+                    canvasCtx.save();
+                    canvasCtx.translate(w / 2, h / 2);
+                    canvasCtx.rotate((tiltCorrectionAngle * Math.PI) / 180.0);
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(-30, 0); canvasCtx.lineTo(30, 0);
+                    canvasCtx.moveTo(0, -30); canvasCtx.lineTo(0, 30);
+                    canvasCtx.strokeStyle = Math.abs(tiltCorrectionAngle) <= 1.0 ? '#10b981' : '#f97316';
+                    canvasCtx.lineWidth = 2;
+                    canvasCtx.stroke();
+                    canvasCtx.restore();
                 }
 
-                canvasCtx.beginPath();
-                canvasCtx.arc(w / 2, h / 2, 45, 0, 2 * Math.PI);
-                canvasCtx.strokeStyle = Math.abs(tiltCorrectionAngle) <= 1.0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(249, 115, 22, 0.4)';
-                canvasCtx.lineWidth = 1.5;
-                canvasCtx.stroke();
+                if (results.poseLandmarks) {
+                    let landmarks = mapLandmarksFromAnalysisCrop(results.poseLandmarks);
+                    const trackingCom = getPoseCom(landmarks);
+                    if (!acceptTrackedCom(trackingCom)) {
+                        document.getElementById('cvStatusText').innerText = "STATUS: TARGET HOLD";
+                        document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-yellow-400">Target Hold</span>: 检测结果突然跳离当前运动员，已暂时忽略这一帧。`;
+                        return;
+                    }
 
-                canvasCtx.save();
-                canvasCtx.translate(w / 2, h / 2);
-                canvasCtx.rotate((tiltCorrectionAngle * Math.PI) / 180.0);
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(-30, 0); canvasCtx.lineTo(30, 0);
-                canvasCtx.moveTo(0, -30); canvasCtx.lineTo(0, 30);
-                canvasCtx.strokeStyle = Math.abs(tiltCorrectionAngle) <= 1.0 ? '#10b981' : '#f97316';
-                canvasCtx.lineWidth = 2;
-                canvasCtx.stroke();
+                    if (Math.abs(tiltCorrectionAngle) > 0.01) {
+                        const centerPoint = { x: 0.5, y: 0.5 };
+                        landmarks = landmarks.map(pt => rotatePoint(pt, -tiltCorrectionAngle, centerPoint));
+                    }
+
+                    safeDrawSkeleton(canvasCtx, canvasElement, landmarks);
+
+                    const rHip = landmarks[24], lHip = landmarks[23];
+                    const rKnee = landmarks[26], lKnee = landmarks[25];
+                    const rAnkle = landmarks[28], lAnkle = landmarks[27];
+                    const rShoulder = landmarks[12], lShoulder = landmarks[11];
+
+                    if (![rHip, lHip, rKnee, lKnee, rAnkle, lAnkle, rShoulder, lShoulder].every(Boolean)) {
+                        throw new Error('required landmarks missing');
+                    }
+
+                    const shoulderMidX = (lShoulder.x + rShoulder.x) / 2;
+                    const shoulderMidY = (lShoulder.y + rShoulder.y) / 2;
+                    const hipMidX = (lHip.x + rHip.x) / 2;
+                    const hipMidY = (lHip.y + rHip.y) / 2;
+
+                    const supportLeg = pickSupportLeg(
+                        { hip: lHip, knee: lKnee, ankle: lAnkle },
+                        { hip: rHip, knee: rKnee, ankle: rAnkle },
+                        hipMidX
+                    );
+                    const kneeFlexionAngle = calculateAngle(supportLeg.hip, supportLeg.knee, supportLeg.ankle);
+                    document.getElementById('liveKneeAngle').innerText = kneeFlexionAngle + "°";
+
+                    if (kneeFlexionAngle > 115) {
+                        document.getElementById('liveKneeAngle').className = "text-3xl font-black text-red-400";
+                    } else if (kneeFlexionAngle >= 100 && kneeFlexionAngle <= 110) {
+                        document.getElementById('liveKneeAngle').className = "text-3xl font-black text-skating-success";
+                    } else {
+                        document.getElementById('liveKneeAngle').className = "text-3xl font-black text-white";
+                    }
+
+                    let leanRadians = Math.atan2(hipMidY - shoulderMidY, hipMidX - shoulderMidX);
+                    let leanAngle = Math.abs(Math.round(leanRadians * 180 / Math.PI) - 90);
+                    document.getElementById('liveLeanAngle').innerText = leanAngle + "°";
+
+                    const pelvisY = (lHip.y + rHip.y) / 2;
+                    const pelvisHeightPct = (pelvisY * 100).toFixed(1);
+                    document.getElementById('livePelvisHeight').innerText = pelvisHeightPct + "%";
+
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(0, pelvisY * canvasElement.height);
+                    canvasCtx.lineTo(canvasElement.width, pelvisY * canvasElement.height);
+                    canvasCtx.strokeStyle = 'rgba(234, 179, 8, 0.8)';
+                    canvasCtx.lineWidth = 2.5;
+                    canvasCtx.setLineDash([10, 10]);
+                    canvasCtx.stroke();
+                    canvasCtx.setLineDash([]);
+
+                    let speedL = 0, speedR = 0;
+                    let currentTime = performance.now();
+                    let deltaTime = currentTime - lastTime;
+                    if (deltaTime > 0 && lastLeftAnkle && lastRightAnkle) {
+                        let distL = Math.hypot(lAnkle.x - lastLeftAnkle.x, lAnkle.y - lastLeftAnkle.y);
+                        let distR = Math.hypot(rAnkle.x - lastRightAnkle.x, rAnkle.y - lastRightAnkle.y);
+                        speedL = Math.round((distL / deltaTime) * 50000);
+                        speedR = Math.round((distR / deltaTime) * 50000);
+                    }
+                    lastLeftAnkle = { x: lAnkle.x, y: lAnkle.y };
+                    lastRightAnkle = { x: rAnkle.x, y: rAnkle.y };
+                    lastTime = currentTime;
+
+                    const peakSpeed = Math.max(speedL, speedR);
+                    document.getElementById('liveRecoverySpeed').innerText = peakSpeed;
+
+                    const rawCom = {
+                        x: (shoulderMidX + hipMidX) / 2,
+                        y: (shoulderMidY + pelvisY) / 2
+                    };
+                    const smoothCom = smoothComPoint(rawCom) || rawCom;
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(smoothCom.x * canvasElement.width, smoothCom.y * canvasElement.height, 9, 0, 2 * Math.PI);
+                    canvasCtx.fillStyle = '#0ea5e9';
+                    canvasCtx.fill();
+                    canvasCtx.strokeStyle = '#ffffff';
+                    canvasCtx.lineWidth = 2;
+                    canvasCtx.stroke();
+                    if (lastTargetCom) {
+                        const lockX = lastTargetCom.x * canvasElement.width;
+                        const lockY = lastTargetCom.y * canvasElement.height;
+                        canvasCtx.beginPath();
+                        canvasCtx.arc(lockX, lockY, 24, 0, 2 * Math.PI);
+                        canvasCtx.strokeStyle = poseJumpRejectCount > 0 ? '#facc15' : '#10b981';
+                        canvasCtx.lineWidth = 2;
+                        canvasCtx.stroke();
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo(lockX - 11, lockY);
+                        canvasCtx.lineTo(lockX + 11, lockY);
+                        canvasCtx.moveTo(lockX, lockY - 11);
+                        canvasCtx.lineTo(lockX, lockY + 11);
+                        canvasCtx.stroke();
+                    }
+                    const consoleOutput = document.getElementById('aiFeedbackTextCV');
+                    let alignmentNote = Math.abs(tiltCorrectionAngle) <= 1.0
+                        ? `<span class="text-skating-success">[ 电子地平线完美校准 - 数据已锁定 ]</span>`
+                        : `<span class="text-skating-accent">[ 倾角纠正中 (Roll: ${tiltCorrectionAngle}°) ]</span>`;
+
+                    if (kneeFlexionAngle > 115) {
+                        consoleOutput.innerHTML = `> ${alignmentNote}<br>
+                        > <span class="text-red-400"> Warning</span>: ${supportLeg.side}支撑膝弯曲不足 ${kneeFlexionAngle}°。直道蹬冰受限！<br>
+                        <button onclick="goToPlanningAndLoad('bounce')" class="mt-2 bg-skating-accent hover:bg-orange-600 text-white text-[10px] px-2.5 py-1 rounded font-bold transition-all"><i class="fa-solid fa-calendar-plus mr-1"></i>一键应用[直道骨盆稳定]专项课表</button>`;
+                    } else if (leanAngle > 52) {
+                        consoleOutput.innerHTML = `> ${alignmentNote}<br>
+                        > <span class="text-yellow-400"> Focus</span>: 身体姿态倾角达到 ${leanAngle}°。这表示低姿态/躯干前倾明显；需结合当前是直道还是弯道由教练判读。`;
+                    } else {
+                        consoleOutput.innerHTML = `> ${alignmentNote}<br>
+                        > <span class="text-skating-success"> Tracking</span>: 自动目标跟随中，姿态数据正在更新。`;
+                    }
+                    document.getElementById('cvStatusText').innerText = "STATUS: TRACKING LIVE";
+                } else {
+                    document.getElementById('liveKneeAngle').innerText = "--°";
+                    document.getElementById('liveLeanAngle').innerText = "--°";
+                    document.getElementById('livePelvisHeight').innerText = "--%";
+                    document.getElementById('liveRecoverySpeed').innerText = "--";
+                }
+            } catch (error) {
+                console.warn("Pose result skipped:", error);
+                document.getElementById('cvStatusText').innerText = "STATUS: RESULT SKIPPED";
+            } finally {
                 canvasCtx.restore();
             }
-
-            if (results.poseLandmarks) {
-                let landmarks = results.poseLandmarks;
-
-                if (Math.abs(tiltCorrectionAngle) > 0.01) {
-                    const centerPoint = { x: 0.5, y: 0.5 };
-                    landmarks = landmarks.map(pt => rotatePoint(pt, -tiltCorrectionAngle, centerPoint));
-                }
-
-                safeDrawSkeleton(canvasCtx, canvasElement, landmarks);
-
-                const rHip = landmarks[24], lHip = landmarks[23];
-                const rKnee = landmarks[26], lKnee = landmarks[25];
-                const rAnkle = landmarks[28], lAnkle = landmarks[27];
-                const rShoulder = landmarks[12], lShoulder = landmarks[11];
-
-                const shoulderMidX = (lShoulder.x + rShoulder.x) / 2;
-                const shoulderMidY = (lShoulder.y + rShoulder.y) / 2;
-                const hipMidX = (lHip.x + rHip.x) / 2;
-                const hipMidY = (lHip.y + rHip.y) / 2;
-
-                const supportLeg = pickSupportLeg(
-                    { hip: lHip, knee: lKnee, ankle: lAnkle },
-                    { hip: rHip, knee: rKnee, ankle: rAnkle },
-                    hipMidX
-                );
-                const kneeFlexionAngle = calculateAngle(supportLeg.hip, supportLeg.knee, supportLeg.ankle);
-                document.getElementById('liveKneeAngle').innerText = kneeFlexionAngle + "°";
-                
-                if (kneeFlexionAngle > 115) {
-                    document.getElementById('liveKneeAngle').className = "text-3xl font-black text-red-400";
-                } else if (kneeFlexionAngle >= 100 && kneeFlexionAngle <= 110) {
-                    document.getElementById('liveKneeAngle').className = "text-3xl font-black text-skating-success";
-                } else {
-                    document.getElementById('liveKneeAngle').className = "text-3xl font-black text-white";
-                }
-                 
-                let leanRadians = Math.atan2(hipMidY - shoulderMidY, hipMidX - shoulderMidX);
-                let leanAngle = Math.abs(Math.round(leanRadians * 180 / Math.PI) - 90);
-                document.getElementById('liveLeanAngle').innerText = leanAngle + "°";
-
-                const pelvisY = (lHip.y + rHip.y) / 2;
-                const pelvisHeightPct = (pelvisY * 100).toFixed(1);
-                document.getElementById('livePelvisHeight').innerText = pelvisHeightPct + "%";
-
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, pelvisY * canvasElement.height);
-                canvasCtx.lineTo(canvasElement.width, pelvisY * canvasElement.height);
-                canvasCtx.strokeStyle = 'rgba(234, 179, 8, 0.8)';
-                canvasCtx.lineWidth = 2.5;
-                canvasCtx.setLineDash([10, 10]);
-                canvasCtx.stroke();
-                canvasCtx.setLineDash([]);
-
-                let speedL = 0, speedR = 0;
-                let currentTime = performance.now();
-                let deltaTime = currentTime - lastTime;
-                if (deltaTime > 0 && lastLeftAnkle && lastRightAnkle) {
-                    let distL = Math.hypot(lAnkle.x - lastLeftAnkle.x, lAnkle.y - lastLeftAnkle.y);
-                    let distR = Math.hypot(rAnkle.x - lastRightAnkle.x, rAnkle.y - lastRightAnkle.y);
-                    speedL = Math.round((distL / deltaTime) * 50000); 
-                    speedR = Math.round((distR / deltaTime) * 50000);
-                }
-                lastLeftAnkle = { x: lAnkle.x, y: lAnkle.y };
-                lastRightAnkle = { x: rAnkle.x, y: rAnkle.y };
-                lastTime = currentTime;
-
-                const peakSpeed = Math.max(speedL, speedR);
-                document.getElementById('liveRecoverySpeed').innerText = peakSpeed;
-
-                const comX = (shoulderMidX + hipMidX) / 2;
-                const comY = (shoulderMidY + pelvisY) / 2;
-                canvasCtx.beginPath();
-                canvasCtx.arc(comX * canvasElement.width, comY * canvasElement.height, 9, 0, 2 * Math.PI);
-                canvasCtx.fillStyle = '#0ea5e9';
-                canvasCtx.fill();
-                canvasCtx.strokeStyle = '#ffffff';
-                canvasCtx.lineWidth = 2;
-                canvasCtx.stroke();
-
-                const consoleOutput = document.getElementById('aiFeedbackTextCV');
-                let alignmentNote = Math.abs(tiltCorrectionAngle) <= 1.0 
-                    ? `<span class="text-skating-success">[ 电子地平线完美校准 - 数据已锁定 ]</span>` 
-                    : `<span class="text-skating-accent">[ 倾角纠正中 (Roll: ${tiltCorrectionAngle}°) ]</span>`;
-
-                if (kneeFlexionAngle > 115) {
-                    consoleOutput.innerHTML = `> ${alignmentNote}<br>
-                    > <span class="text-red-400"> Warning</span>: ${supportLeg.side}支撑膝弯曲不足 ${kneeFlexionAngle}°。直道蹬冰受限！<br>
-                    <button onclick="goToPlanningAndLoad('bounce')" class="mt-2 bg-skating-accent hover:bg-orange-600 text-white text-[10px] px-2.5 py-1 rounded font-bold transition-all"><i class="fa-solid fa-calendar-plus mr-1"></i>一键应用[直道骨盆稳定]专项课表</button>`;
-                } else if (leanAngle > 52) {
-                    consoleOutput.innerHTML = `> ${alignmentNote}<br>
-                    > <span class="text-yellow-400"> Focus</span>: 弯道倾斜度达到 ${leanAngle}°。重心已压低，离心力对抗载荷正常。`;
-                } else {
-                    consoleOutput.innerHTML = `> ${alignmentNote}<br>
-                    > <span class="text-skating-success"> Tracking</span>: 自适应重力矫正完毕，动作符合 US NDP 黄金阈值。`;
-                }
-            } else {
-                document.getElementById('liveKneeAngle').innerText = "--°";
-                document.getElementById('liveLeanAngle').innerText = "--°";
-                document.getElementById('livePelvisHeight').innerText = "--%";
-                document.getElementById('liveRecoverySpeed').innerText = "--";
-            }
-            canvasCtx.restore();
         }
 
         function processVideoFrame() {
@@ -1353,12 +1515,14 @@
                 canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             }
 
-            if (isModelReady && poseModel && !bioPoseSendInFlight) {
+            const now = performance.now();
+            if (isModelReady && poseModel && !bioPoseSendInFlight && now - lastPoseFrameAt >= POSE_FRAME_INTERVAL_MS) {
+                lastPoseFrameAt = now;
                 bioPoseSendInFlight = true;
-                sendPoseFrameWithTimeout(videoElement)
+                sendPoseFrame(videoElement)
                     .catch((error) => {
                         console.warn("Video frame analysis skipped:", error);
-                        document.getElementById('cvStatusText').innerText = "STATUS: TRACKING RETRYING";
+                        document.getElementById('cvStatusText').innerText = "STATUS: FRAME SKIPPED";
                     })
                     .finally(() => {
                         bioPoseSendInFlight = false;
@@ -1379,16 +1543,21 @@
             requestAnimationFrame(processVideoFrame);
         }
 
-        function sendPoseFrameWithTimeout(videoElement, timeoutMs = 1200) {
-            const sourceCanvas = document.createElement('canvas');
-            sourceCanvas.width = videoElement.videoWidth || 1;
-            sourceCanvas.height = videoElement.videoHeight || 1;
-            const sourceCtx = sourceCanvas.getContext('2d');
-            sourceCtx.drawImage(videoElement, 0, 0, sourceCanvas.width, sourceCanvas.height);
-            return Promise.race([
-                poseModel.send({image: sourceCanvas}),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('pose frame timeout')), timeoutMs))
-            ]);
+        function sendPoseFrame(videoElement) {
+            const maxWidth = 640;
+            const sourceWidth = videoElement.videoWidth || maxWidth;
+            const sourceHeight = videoElement.videoHeight || 360;
+            poseAnalysisCrop = buildAnalysisCrop();
+            const sx = Math.round(poseAnalysisCrop.x * sourceWidth);
+            const sy = Math.round(poseAnalysisCrop.y * sourceHeight);
+            const sw = Math.max(1, Math.round(poseAnalysisCrop.w * sourceWidth));
+            const sh = Math.max(1, Math.round(poseAnalysisCrop.h * sourceHeight));
+            const scale = Math.min(1, maxWidth / Math.max(1, sw));
+            poseFrameCanvas.width = Math.max(1, Math.round(sw * scale));
+            poseFrameCanvas.height = Math.max(1, Math.round(sh * scale));
+            const sourceCtx = poseFrameCanvas.getContext('2d', { willReadFrequently: true });
+            sourceCtx.drawImage(videoElement, sx, sy, sw, sh, 0, 0, poseFrameCanvas.width, poseFrameCanvas.height);
+            return poseModel.send({image: poseFrameCanvas});
         }
         // 绑定页面初始化事件
         document.addEventListener('DOMContentLoaded', () => {
@@ -1406,8 +1575,23 @@
             const cameraRollSlider = document.getElementById('cameraRollSlider');
             const rollValueText = document.getElementById('rollValueText');
             const calibStatusBadge = document.getElementById('calibStatusBadge');
+            const videoViewport = document.getElementById('videoViewport');
 
             uploadZone.addEventListener('click', () => videoUpload.click());
+
+            videoViewport.addEventListener('click', (event) => {
+                if (!window.bioAnalysisStarted || !videoElement.src || videoElement.readyState < 2) return;
+                const lockPoint = getVideoPointFromPointer(event, videoElement, videoViewport);
+                lockTargetAt(lockPoint);
+                if (videoElement.paused && isModelReady && poseModel && !bioPoseSendInFlight) {
+                    bioPoseSendInFlight = true;
+                    sendPoseFrame(videoElement)
+                        .catch((error) => console.warn("Click-lock pose frame skipped:", error))
+                        .finally(() => {
+                            bioPoseSendInFlight = false;
+                        });
+                }
+            });
 
             cameraRollSlider.addEventListener('input', async (e) => {
                 tiltCorrectionAngle = parseFloat(e.target.value) || 0;
@@ -1420,7 +1604,7 @@
                     calibStatusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-bold bg-orange-500/10 border border-orange-500/30 text-skating-accent";
                 }
                 if (videoElement.paused && isModelReady && poseModel && videoElement.readyState >= 2) {
-                    await poseModel.send({image: videoElement});
+                    await sendPoseFrame(videoElement).catch((error) => console.warn("Roll pose frame skipped:", error));
                 }
             });
 
@@ -1500,8 +1684,13 @@
                     const targetTime = (parseFloat(e.target.value) / 100) * videoElement.duration;
                     videoElement.currentTime = targetTime;
                     currentTimeUI.innerText = formatTime(targetTime);
-                    if (videoElement.paused && isModelReady) {
-                        await poseModel.send({image: videoElement});
+                    if (videoElement.paused && isModelReady && poseModel && !bioPoseSendInFlight) {
+                        bioPoseSendInFlight = true;
+                        await sendPoseFrame(videoElement)
+                            .catch((error) => console.warn("Scrub pose frame skipped:", error))
+                            .finally(() => {
+                                bioPoseSendInFlight = false;
+                            });
                     }
                 }
             });
