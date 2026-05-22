@@ -1,0 +1,9 @@
+{
+  "name": "blaze-skate-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/generate-firebase-config.mjs"
+  }
+}

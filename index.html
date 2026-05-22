@@ -81,8 +81,8 @@
                 <img src="https://placehold.co/100x100/1e293b/a855f7?text=Lin" alt="Lindsay Avatar" class="w-full h-full object-cover">
             </div>
             <div class="text-sm">
-                <p class="font-semibold text-white">Lindsay <span class="text-xs text-slate-400 font-normal ml-1" id="lindsayAgeBadge">U13 预备组</span></p>
-                <p class="text-xs text-skating-accent font-medium"><i class="fa-solid fa-star mr-1"></i><span id="globalPoints">2450</span> 积分</p>
+                <p class="font-semibold text-white">Lindsay <span class="text-xs text-slate-400 font-normal ml-1" id="lindsayAgeBadge">冰龄计算中</span></p>
+                <p class="text-xs text-skating-accent font-medium"><i class="fa-solid fa-star mr-1"></i><span id="globalPoints">0</span> 积分</p>
             </div>
         </div>
     </header>
@@ -206,8 +206,8 @@
                     
                     <!-- 视频与物理大屏 HUD 叠加渲染区 -->
                     <div class="w-full bg-black rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-800 aspect-video transition-all duration-500" id="videoViewport">
-                        <video id="inputVideo" playsinline muted class="hidden"></video>
-                        <canvas id="outputCanvas" class="absolute inset-0 w-full h-full object-contain"></canvas>
+                        <video id="inputVideo" playsinline muted class="absolute inset-0 w-full h-full object-contain"></video>
+                        <canvas id="outputCanvas" class="absolute inset-0 w-full h-full object-contain pointer-events-none"></canvas>
                         
                         <div id="loadingModel" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-20">
                             <i class="fa-solid fa-circle-notch fa-spin text-4xl text-skating-pro mb-3"></i>
@@ -252,7 +252,7 @@
                              <div class="absolute right-0 top-0 w-16 h-full bg-gradient-to-l from-skating-success/10 to-transparent"></div>
                              <p class="text-[10px] text-slate-400 mb-1 font-bold">支撑腿膝盖屈曲 (Knee)</p>
                              <p class="text-3xl font-black text-white" id="liveKneeAngle">--°</p>
-                             <p class="text-[10px] text-slate-500 mt-1 font-mono">NDP标准: 100°-110°</p>
+                             <p class="text-[10px] text-slate-500 mt-1 font-mono">按运动员本体左右识别</p>
                          </div>
                          <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700 relative overflow-hidden">
                              <div class="absolute right-0 top-0 w-16 h-full bg-gradient-to-l from-yellow-500/10 to-transparent"></div>
@@ -286,76 +286,65 @@
             <div class="lg:col-span-4 bg-skating-card rounded-2xl p-6 border border-slate-700 shadow-xl flex flex-col gap-6 self-start">
                 <div>
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-stopwatch text-skating-neon"></i> Lactic 配速损耗测算
+                        <i class="fa-solid fa-stopwatch text-skating-neon"></i> Junior D 配速衰减分析
                     </h2>
-                    <p class="text-sm text-slate-400 mt-1">模拟 500m 项目多圈速跑（起跑前半圈 + 4个完整单圈），算法将自动解构最后一圈大腿极度酸痛下的“无氧抗性”。</p>
+                    <p class="text-sm text-slate-400 mt-1">支持 500m、777m、1000m 三个 Junior D 距离。500m 记录起跑前半圈；777m 和 1000m 从起跑圈开始记录。</p>
                 </div>
 
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700">
-                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">起跑前半圈 (s)</label>
-                            <input type="number" step="0.01" id="paceStart" value="7.25" class="w-full bg-transparent text-white font-mono font-bold text-lg focus:outline-none">
-                        </div>
-                        <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700">
-                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">第 1 圈单圈 (s)</label>
-                            <input type="number" step="0.01" id="paceLap1" value="9.15" class="w-full bg-transparent text-white font-mono font-bold text-lg focus:outline-none">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700">
-                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">第 2 圈单圈 (s)</label>
-                            <input type="number" step="0.01" id="paceLap2" value="9.62" class="w-full bg-transparent text-white font-mono font-bold text-lg focus:outline-none">
-                        </div>
-                        <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700">
-                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">第 3 圈单圈 (s)</label>
-                            <input type="number" step="0.01" id="paceLap3" value="10.38" class="w-full bg-transparent text-white font-mono font-bold text-lg focus:outline-none">
-                        </div>
-                    </div>
-                    <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700">
-                        <label class="block text-[10px] text-slate-400 mb-1 font-bold">第 4 圈 (终点圈) (s)</label>
-                        <input type="number" step="0.01" id="paceLap4" value="11.20" class="w-full bg-transparent text-white font-mono font-bold text-lg focus:outline-none">
-                    </div>
+                <div class="grid grid-cols-3 gap-2" id="distanceSelector">
+                    <button type="button" data-distance="500" class="distance-btn bg-skating-neon text-white font-bold rounded-lg py-2 text-xs border border-skating-neon">500m</button>
+                    <button type="button" data-distance="777" class="distance-btn bg-slate-800 text-slate-300 font-bold rounded-lg py-2 text-xs border border-slate-700 hover:border-skating-neon">777m</button>
+                    <button type="button" data-distance="1000" class="distance-btn bg-slate-800 text-slate-300 font-bold rounded-lg py-2 text-xs border border-slate-700 hover:border-skating-neon">1000m</button>
                 </div>
+
+                <div class="grid grid-cols-2 gap-3" id="paceInputs"></div>
 
                 <button id="calculatePaceBtn" class="w-full bg-gradient-to-r from-skating-neon to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_15px_rgba(14,165,233,0.3)] flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-chart-line"></i> 生成乳酸衰减曲线
+                    <i class="fa-solid fa-chart-line"></i> 生成配速衰减曲线
                 </button>
             </div>
 
             <div class="lg:col-span-8 space-y-6">
                 <div class="bg-skating-card rounded-2xl p-6 border border-slate-700 shadow-xl flex flex-col">
                     <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-chart-area text-skating-neon mr-2"></i>500m 极速配速标杆比对</h3>
-                        <span class="text-xs font-mono bg-slate-900 border border-slate-800 px-3 py-1 rounded text-skating-success">TARGET: US NDP U13</span>
+                        <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-chart-area text-skating-neon mr-2"></i><span id="pacingChartTitle">500m 配速标杆比对</span></h3>
+                        <span class="text-xs font-mono bg-slate-900 border border-slate-800 px-3 py-1 rounded text-skating-success">TARGET: US Junior D</span>
                     </div>
 
                     <div class="relative w-full overflow-hidden p-2" style="max-height: 280px; min-height: 260px;">
                         <canvas id="pacingChart"></canvas>
                     </div>
 
+                    <div class="mt-4 bg-slate-900/70 border border-slate-800 rounded-xl p-4">
+                        <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                            <h4 class="font-bold text-xs text-slate-400 uppercase tracking-widest"><i class="fa-solid fa-sliders text-skating-success mr-1"></i> Junior D 标准编辑</h4>
+                            <button id="resetBenchmarkBtn" type="button" class="text-[10px] font-bold text-slate-400 hover:text-skating-success transition-colors">恢复默认标准</button>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="benchmarkInputs"></div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                            <p class="text-xs text-slate-400 mb-1">抗乳酸指数 (Lactic Index)</p>
+                            <p class="text-xs text-slate-400 mb-1">节奏稳定指数</p>
                             <p class="text-2xl font-black text-yellow-400" id="lacticIndexVal">--%</p>
-                            <p class="text-[10px] text-slate-500 mt-1 font-mono">末圈衰减率越低越好</p>
+                            <p class="text-[10px] text-slate-500 mt-1 font-mono">后段衰减越低越好</p>
                         </div>
                         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                            <p class="text-xs text-slate-400 mb-1">无氧耐力评级</p>
+                            <p class="text-xs text-slate-400 mb-1">配速评级</p>
                             <p class="text-2xl font-black text-white" id="lacticLevel">等待测算...</p>
                             <p class="text-[10px] text-slate-500 mt-1 font-mono" id="lacticLevelSub">--</p>
                         </div>
                         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                            <p class="text-xs text-slate-400 mb-1">推荐训练比率 (有氧:无氧)</p>
+                            <p class="text-xs text-slate-400 mb-1">推荐训练侧重</p>
                             <p class="text-2xl font-black text-skating-neon" id="ratioTraining">--</p>
-                            <p class="text-[10px] text-slate-500 mt-1 font-mono">基于心肺与无氧模型</p>
+                            <p class="text-[10px] text-slate-500 mt-1 font-mono">基于距离与后段衰减</p>
                         </div>
                     </div>
 
                     <div class="mt-4 bg-slate-900 border border-slate-800 p-4 rounded-xl">
-                        <h4 class="font-bold text-xs text-slate-400 uppercase tracking-widest mb-2"><i class="fa-solid fa-robot text-skating-neon mr-1"></i> AI 配速衰减归因报告</h4>
+                        <h4 class="font-bold text-xs text-slate-400 uppercase tracking-widest mb-2"><i class="fa-solid fa-robot text-skating-neon mr-1"></i> 配速衰减归因报告</h4>
                         <p class="text-sm text-slate-300 leading-relaxed font-mono" id="paceAIDesc">
-                            请在左侧配置面板中填写实际圈速，然后点击“生成乳酸衰减曲线”进行深度分析。
+                            请在左侧选择距离并填写实际分段，然后点击“生成配速衰减曲线”进行分析。
                         </p>
                     </div>
                 </div>
@@ -369,34 +358,39 @@
             <div class="lg:col-span-4 bg-skating-card rounded-2xl p-6 border border-slate-700 shadow-xl self-start flex flex-col gap-6">
                 <div>
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-week text-skating-pro"></i> 自适应微循环课表
+                        <i class="fa-solid fa-calendar-week text-skating-pro"></i> Junior D 阶段训练模板
                     </h2>
-                    <p class="text-sm text-slate-400 mt-1">根据您在生物力学及配速模块中测算出的瓶颈，一键动态派发针对性周期攻坚课表。</p>
+                    <p class="text-sm text-slate-400 mt-1">按赛季冰龄与长期发展原则生成周计划：技术质量优先，控制训练量，保留恢复与多样化身体发展。</p>
                 </div>
 
                 <div class="space-y-3">
-                    <label class="block text-xs font-bold text-slate-400 uppercase">当前核心攻坚方向</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase">本周训练侧重</label>
                     <button onclick="generatePlan('lean')" id="focus-lean" class="w-full text-left p-4 rounded-xl border bg-slate-800 hover:bg-slate-700 transition-all border-slate-700 group flex items-center justify-between">
                         <div>
-                            <p class="font-bold text-white group-hover:text-skating-pro text-sm">弯道倾斜角极限突破</p>
-                            <p class="text-[10px] text-slate-400 mt-0.5">针对：弯道倾斜不达标、出弯轨迹不稳</p>
+                            <p class="font-bold text-white group-hover:text-skating-pro text-sm">技术基础与弯道控制</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Junior D 推荐：姿态、压刃、交叉步节奏</p>
                         </div>
                         <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-skating-pro"></i>
                     </button>
                     <button onclick="generatePlan('bounce')" id="focus-bounce" class="w-full text-left p-4 rounded-xl border bg-slate-800 hover:bg-slate-700 transition-all border-slate-700 group flex items-center justify-between">
                         <div>
-                            <p class="font-bold text-white group-hover:text-skating-pro text-sm">直道骨盆高度与核心锁死</p>
-                            <p class="text-[10px] text-slate-400 mt-0.5">针对：骨盆起伏率高、动能损耗大</p>
+                            <p class="font-bold text-white group-hover:text-skating-pro text-sm">速度窗口与500m配速</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">短距离神经速度、起跑、不过量乳酸</p>
                         </div>
                         <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-skating-pro"></i>
                     </button>
                     <button onclick="generatePlan('endurance')" id="focus-endurance" class="w-full text-left p-4 rounded-xl border bg-slate-800 hover:bg-slate-700 transition-all border-slate-700 group flex items-center justify-between">
                         <div>
-                            <p class="font-bold text-white group-hover:text-skating-pro text-sm">末圈无氧耐力储备 (抗乳酸)</p>
-                            <p class="text-[10px] text-slate-400 mt-0.5">针对：后半段配速崩盘、速度严重衰减</p>
+                            <p class="font-bold text-white group-hover:text-skating-pro text-sm">比赛周与恢复管理</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">赛前唤醒、轻量技术、赛后复盘恢复</p>
                         </div>
                         <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-skating-pro"></i>
                     </button>
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                        <p class="text-[10px] text-slate-400 leading-relaxed">
+                            设计依据：USOPC ADM、加拿大 LTPAD/NCCP、中韩公开青少年速滑训练资料与集训报道。当前模板按每周4次上冰、每次含30分钟冰前陆地热身，另配3-4次陆地专项/恢复。实际执行请由教练按冰时、比赛日和身体状态调整。
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -405,9 +399,9 @@
                     <div>
                         <h3 class="text-lg font-bold text-white flex items-center gap-2">
                             <i class="fa-solid fa-clipboard-list text-skating-pro"></i>
-                            第 <span id="planWeekNum">1</span> 周周期微循环：<span id="planTargetTitle" class="text-skating-pro font-extrabold">请选择攻坚焦点</span>
+                            第 <span id="planWeekNum">1</span> 周周期微循环：<span id="planTargetTitle" class="text-skating-pro font-extrabold">请选择训练侧重</span>
                         </h3>
-                        <p class="text-xs text-slate-400 mt-1">完成每日训练打卡，增加 BLAZE 积分并解除“缓冲警报”状态。</p>
+                        <p class="text-xs text-slate-400 mt-1" id="planTargetDesc">模板用于训练记录与教练沟通，不替代现场教练安排。</p>
                     </div>
                 </div>
 
@@ -415,12 +409,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4" id="calendarGrid">
                      <div class="col-span-5 p-12 text-center text-slate-500 border-2 border-dashed border-slate-700 rounded-xl">
                          <i class="fa-solid fa-calendar-plus text-3xl mb-3 block text-slate-600"></i>
-                         请在左侧点击你想攻坚的生物力学或配速缺陷方向，系统将秒级生成自适应微循环课表。
+                         请在左侧选择本周训练侧重，系统将生成适合 Junior D 阶段的微循环模板。
                      </div>
                 </div>
 
                 <div class="mt-6 border-t border-slate-700 pt-4 flex flex-wrap justify-between items-center gap-4 hidden" id="pointsSummaryBox">
-                    <p class="text-xs text-slate-400 font-medium">每天完成打卡将自动解锁对应生物物理潜能。</p>
+                    <p class="text-xs text-slate-400 font-medium">打卡仅记录完成度；训练量和强度应以教练当天安排为准。</p>
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-bold text-slate-400">本周已打卡积分:</span>
                         <span class="text-lg font-black text-skating-accent" id="weeklyPointsAwarded"><i class="fa-solid fa-bolt mr-1"></i>0</span>
@@ -436,80 +430,216 @@
             <div class="lg:col-span-4 bg-skating-card rounded-2xl p-6 border border-slate-700 shadow-xl self-start flex flex-col gap-6">
                 <div>
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-screwdriver-wrench text-skating-accent"></i> F1 级底盘调校舱
+                        <i class="fa-solid fa-screwdriver-wrench text-skating-accent"></i> 器材调校记录舱
                     </h2>
-                    <p class="text-sm text-slate-400 mt-1">短道速滑是人器合一的运动。根据力学，体重不足将无法踩入大弧度。我们将根据体重判定这是器材缺陷还是技术失误。</p>
+                    <p class="text-sm text-slate-400 mt-1">记录冰鞋、冰刀与反馈症状，生成给教练/磨刀师复核的检查清单。结果仅提示可能方向，不替代现场调刀。</p>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">主要症状 / 痛点</label>
-                        <select id="equipSymptom" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-skating-accent appearance-none">
-                            <option value="slide">弯道向外侧滑 (咬不住冰)</option>
-                            <option value="bootout">入弯时鞋帮经常蹭冰 (Boot Out)</option>
-                            <option value="unstable">直道滑行发飘，走直线困难</option>
-                            <option value="ankle">弯道发力脚踝极酸痛</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">主要反馈 / 症状记录</label>
+                        <textarea id="equipSymptomText" rows="3" placeholder="例如：左弯中段咬冰不足，出弯时右脚推蹬释放不顺。" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-skating-accent placeholder:text-slate-600 resize-none"></textarea>
+                        <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <button type="button" data-symptom-template="slide" class="symptom-template-btn bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-3 py-2 text-left">弯道咬冰不足</button>
+                            <button type="button" data-symptom-template="bootout" class="symptom-template-btn bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-3 py-2 text-left">Boot out / 鞋帮蹭冰</button>
+                            <button type="button" data-symptom-template="unstable" class="symptom-template-btn bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-3 py-2 text-left">直道稳定性差</button>
+                            <button type="button" data-symptom-template="ankle" class="symptom-template-btn bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-3 py-2 text-left">脚踝压力或酸痛</button>
+                            <button type="button" data-symptom-template="release" class="symptom-template-btn bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-3 py-2 text-left">出弯推蹬释放不顺</button>
+                            <button type="button" data-symptom-template="asymmetry" class="symptom-template-btn bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-3 py-2 text-left">左右脚感觉不一致</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">运动员体重 (kg)</label>
+                            <div class="flex items-center">
+                                <input type="number" id="equipWeight" placeholder="--" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-lg placeholder:text-slate-600">
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">运动员身高 (cm)</label>
+                            <div class="flex items-center">
+                                <input type="number" id="equipHeight" placeholder="--" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-lg placeholder:text-slate-600">
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">刀长 (inch)</label>
+                            <input type="text" id="equipBladeLength" placeholder="例如 15寸" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-lg placeholder:text-slate-600">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-[10px] text-slate-500 font-bold uppercase">项目类型</p>
+                            <p class="text-sm text-white font-bold">短道速滑</p>
+                        </div>
+                        <span class="text-[10px] bg-skating-accent/10 text-skating-accent border border-skating-accent/20 px-2 py-1 rounded-full font-bold">Short Track</span>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-gauge-high text-skating-accent text-xs"></i>
+                            <h4 class="text-xs font-bold text-slate-300">Radius / Rocker Marchese 表盘读数说明</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">
+                            冰刀弧度与 Bend 一样用 Marchese Gauge 记录表盘读数。以中心点 0 为基准，往刀头方向标为 +1 到 +10，往刀尾方向标为 -1 到 -10。通常中心附近 2-3 个点可能接近，其余测量点会逐步变化；+9、+10、-9、-10 可根据刀长和量具接触情况选填。
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                        <h4 class="text-xs font-bold text-slate-300 mb-2">左脚 Radius/Rocker 读数</h4>
+                        <div class="grid grid-cols-3 sm:grid-cols-7 gap-2">
+                            <input data-rocker-left="-10" placeholder="-10 可选" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-9" placeholder="-9 可选" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-8" placeholder="-8" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-7" placeholder="-7" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-6" placeholder="-6" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-5" placeholder="-5" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-4" placeholder="-4" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-3" placeholder="-3" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-2" placeholder="-2" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="-1" placeholder="-1" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="0" placeholder="0" class="bg-slate-950 border border-skating-accent/50 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-skating-accent">
+                            <input data-rocker-left="1" placeholder="+1" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="2" placeholder="+2" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="3" placeholder="+3" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="4" placeholder="+4" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="5" placeholder="+5" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="6" placeholder="+6" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="7" placeholder="+7" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="8" placeholder="+8" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="9" placeholder="+9 可选" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-left="10" placeholder="+10 可选" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                        <h4 class="text-xs font-bold text-slate-300 mb-2">右脚 Radius/Rocker 读数</h4>
+                        <div class="grid grid-cols-3 sm:grid-cols-7 gap-2">
+                            <input data-rocker-right="-10" placeholder="-10 可选" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-9" placeholder="-9 可选" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-8" placeholder="-8" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-7" placeholder="-7" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-6" placeholder="-6" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-5" placeholder="-5" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-4" placeholder="-4" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-3" placeholder="-3" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-2" placeholder="-2" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="-1" placeholder="-1" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="0" placeholder="0" class="bg-slate-950 border border-skating-accent/50 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-skating-accent">
+                            <input data-rocker-right="1" placeholder="+1" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="2" placeholder="+2" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="3" placeholder="+3" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="4" placeholder="+4" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="5" placeholder="+5" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="6" placeholder="+6" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="7" placeholder="+7" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="8" placeholder="+8" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="9" placeholder="+9 可选" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                            <input data-rocker-right="10" placeholder="+10 可选" class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-mono placeholder:text-slate-600">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-ruler-combined text-skating-accent text-xs"></i>
+                            <h4 class="text-xs font-bold text-slate-300">Offset 横向偏置测量说明</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">
+                            Offset 以鞋底纵向中心线或脚掌受力中心线为基准，测量刀刃中心线相对该线的横向偏移。建议在前掌安装点和后跟安装点各量一次。记录时用“内侧/外侧 + mm”，不要只写左/右，避免左右脚方向相反造成混淆。
+                        </p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">运动员体重 (kg)</label>
-                            <div class="flex items-center">
-                                <input type="number" id="equipWeight" value="38" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-lg">
-                            </div>
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">左脚 Front Offset</label>
+                            <input type="text" id="equipOffsetLeftFront" placeholder="例如 内2mm" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-sm placeholder:text-slate-600">
                         </div>
                         <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">当前冰刀弧度 (m)</label>
-                            <div class="flex items-center">
-                                <input type="number" id="equipRocker" step="0.1" value="10.5" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-lg">
-                            </div>
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">左脚 Rear Offset</label>
+                            <input type="text" id="equipOffsetLeftRear" placeholder="例如 内1mm" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-sm placeholder:text-slate-600">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">右脚 Front Offset</label>
+                            <input type="text" id="equipOffsetRightFront" placeholder="例如 内2mm" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-sm placeholder:text-slate-600">
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">右脚 Rear Offset</label>
+                            <input type="text" id="equipOffsetRightRear" placeholder="例如 内2mm" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-sm placeholder:text-slate-600">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-wave-square text-skating-accent text-xs"></i>
+                            <h4 class="text-xs font-bold text-slate-300">Bend / Marchese 表盘读数说明</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">
+                            Marchese 表盘每小格为 0.0001 inch。实际记录通常使用教练口头简写，例如“18”表示 0.0018 inch，“22”表示 0.0022 inch。请记录表盘读数，不要写成 mm。压弯后刀片弯度不是单一数字，应按刀身头段、中段、后段分别记录。头段影响入弯、起始咬冰、转向进入感；中段影响弯中支撑、主承重稳定性；后段影响出弯、推蹬释放、尾部稳定性。
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">头段 Bend</label>
+                            <input type="text" id="equipBendFront" placeholder="例如 18" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-sm placeholder:text-slate-600">
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">中段 Bend</label>
+                            <input type="text" id="equipBendMiddle" placeholder="例如 22" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-sm placeholder:text-slate-600">
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <label class="block text-[10px] text-slate-400 mb-1 font-bold">后段 Bend</label>
+                            <input type="text" id="equipBendRear" placeholder="例如 20" class="w-full bg-transparent text-white font-bold font-mono focus:outline-none text-sm placeholder:text-slate-600">
                         </div>
                     </div>
                 </div>
 
                 <button id="analyzeEquipBtn" class="w-full bg-gradient-to-r from-skating-accent to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_15px_rgba(249,115,22,0.3)] flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-wrench"></i> 生成 AI 底盘优化方案
+                    <i class="fa-solid fa-list-check"></i> 生成器材检查清单
                 </button>
             </div>
 
             <div class="lg:col-span-8 space-y-6">
                 <div id="equipEmptyState" class="h-full min-h-[450px] flex flex-col items-center justify-center bg-skating-card/50 rounded-2xl p-12 border border-slate-700/50 text-center border-dashed">
                     <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 text-2xl mb-4"><i class="fa-solid fa-sliders"></i></div>
-                    <h3 class="text-lg font-medium text-slate-300 mb-1">未开始底盘匹配</h3>
-                    <p class="text-sm text-slate-500">输入您的物理体重与当前配备的刀体参数，AI 引擎将自动计算最佳压弯刚度极限。</p>
+                    <h3 class="text-lg font-medium text-slate-300 mb-1">尚未生成器材记录</h3>
+                    <p class="text-sm text-slate-500">填写当前装备参数与症状后，系统会生成调刀前的复核清单与低速测试建议。</p>
                 </div>
 
                 <div id="equipResults" class="hidden bg-skating-card rounded-2xl p-6 border border-slate-700 shadow-xl flex flex-col transition-all">
                     <div class="flex justify-between items-start mb-6">
                         <div>
                             <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                                <i class="fa-solid fa-receipt text-skating-accent mr-1"></i> F1 级力学解构方案
+                                <i class="fa-solid fa-receipt text-skating-accent mr-1"></i> 器材记录与复核清单
                             </h3>
-                            <p class="text-sm text-slate-400 mt-1">诊断结果：<span id="equipReportTitle" class="text-skating-accent font-extrabold">偏置 (Offset) 设定过于保守</span></p>
+                            <p class="text-sm text-slate-400 mt-1">检查方向：<span id="equipReportTitle" class="text-skating-accent font-extrabold">待生成</span></p>
                         </div>
                         <div id="equipStatusBadge" class="px-3 py-1.5 rounded-lg flex items-center gap-2 border"></div>
                     </div>
 
                     <div class="w-full bg-slate-900 rounded-xl p-6 border border-slate-800 flex flex-col md:flex-row items-center gap-6 mb-6">
                         <div class="flex-1">
-                            <h4 class="font-bold text-white mb-2 text-sm"><i class="fa-solid fa-microscope text-skating-accent mr-2"></i>力学原理解析</h4>
+                            <h4 class="font-bold text-white mb-2 text-sm"><i class="fa-solid fa-microscope text-skating-accent mr-2"></i>记录摘要与可能原因</h4>
                             <p id="equipReportDesc" class="text-sm text-slate-300 leading-relaxed font-mono">--</p>
                         </div>
                     </div>
 
-                    <h4 class="font-bold text-slate-200 mb-3 text-sm border-b border-slate-700 pb-2">刀架物理调校方案 (DIY/机械师指令)</h4>
+                    <h4 class="font-bold text-slate-200 mb-3 text-sm border-b border-slate-700 pb-2">给教练/磨刀师的复核项</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 relative overflow-hidden">
                             <div class="absolute top-0 right-0 w-8 h-8 bg-skating-accent rounded-bl-xl flex items-center justify-center text-white font-bold text-xs">1</div>
-                            <h5 id="equipAction1Title" class="text-skating-accent font-bold text-sm mb-1">刀架弧度 (Rocker)</h5>
+                            <h5 id="equipAction1Title" class="text-skating-accent font-bold text-sm mb-1">弧度 / 接触点</h5>
                             <p id="equipAction1Value" class="text-xl font-black text-white mb-2">--</p>
                             <p id="equipAction1Desc" class="text-xs text-slate-400">利用专业圆弧仪进行精细磨弧。</p>
                         </div>
 
                         <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 relative overflow-hidden">
                             <div class="absolute top-0 right-0 w-8 h-8 bg-skating-accent rounded-bl-xl flex items-center justify-center text-white font-bold text-xs">2</div>
-                            <h5 id="equipAction2Title" class="text-skating-accent font-bold text-sm mb-1">刀架偏置 (Offset)</h5>
+                            <h5 id="equipAction2Title" class="text-skating-accent font-bold text-sm mb-1">偏置 / Bend</h5>
                             <p id="equipAction2Value" class="text-xl font-black text-white mb-2">--</p>
                             <p id="equipAction2Desc" class="text-xs text-slate-400">进行横向微调偏心距。</p>
                         </div>
@@ -517,7 +647,7 @@
                     
                     <div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-xl text-xs leading-relaxed flex items-start gap-2">
                         <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
-                        <p><strong>注意：</strong>调整任何器材参数后，请进行低速测试，并立刻重新利用系统的 AI 实验室校对倾斜角变化，严防技术变形代偿。</p>
+                        <p><strong>注意：</strong>不要仅凭本页面直接重磨或移动刀架。任何器材调整都应由教练或专业磨刀师复核，并通过低速直道、低速弯道和录像姿态检查逐步验证。</p>
                     </div>
                 </div>
             </div>
@@ -528,9 +658,48 @@
     <!-- 🌟 全局脚本区：保障 UI、AI 及图表核心函数在解析的第一时间立即可用，杜绝全局作用域 ReferenceError -->
     <script>
         // 全局共享的状态变量（由同步 Module 进行接管）
-        window.globalPointsVal = 2450;
+        window.globalPointsVal = 0;
         window.completedTaskIds = [];
         window.currentActiveFocus = '';
+        window.lindsayBirthDate = '2015-01-14';
+
+        function calculateSkatingAge(birthDateString, referenceDate = new Date()) {
+            const birthYear = new Date(`${birthDateString}T00:00:00`).getFullYear();
+            const seasonYear = referenceDate.getMonth() >= 6
+                ? referenceDate.getFullYear()
+                : referenceDate.getFullYear() - 1;
+            return seasonYear - birthYear;
+        }
+
+        function getUSSpeedskatingDivision(skatingAge) {
+            if (skatingAge >= 18) return 'Senior';
+            if (skatingAge >= 17) return 'Junior A';
+            if (skatingAge >= 15) return 'Junior B';
+            if (skatingAge >= 13) return 'Junior C';
+            if (skatingAge >= 11) return 'Junior D';
+            return 'Junior D 准备期';
+        }
+
+        function getNextSeasonDate(referenceDate = new Date()) {
+            const nextSeasonYear = referenceDate.getMonth() >= 6
+                ? referenceDate.getFullYear() + 1
+                : referenceDate.getFullYear();
+            return new Date(nextSeasonYear, 6, 1);
+        }
+
+        function updateSkatingAgeBadge() {
+            const badge = document.getElementById('lindsayAgeBadge');
+            if (!badge) return;
+
+            const skatingAge = calculateSkatingAge(window.lindsayBirthDate);
+            const division = getUSSpeedskatingDivision(skatingAge);
+            const nextSeasonAge = skatingAge + 1;
+            const nextSeasonDivision = getUSSpeedskatingDivision(nextSeasonAge);
+            const nextSeasonDate = getNextSeasonDate();
+            const nextSeasonText = `${nextSeasonDate.getFullYear()}-07-01`;
+
+            badge.innerHTML = `冰龄${skatingAge} <span class="bg-purple-600/30 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded-full text-[10px] ml-1">${division}</span> <span class="text-[10px] text-slate-500 ml-1">${nextSeasonText}: 冰龄${nextSeasonAge} · ${nextSeasonDivision}</span>`;
+        }
 
         // 1. 核心数学与格式化工具函数
         function calculateAngle(a, b, c) {
@@ -540,11 +709,47 @@
             return Math.round(angle);
         }
 
+        function pickSupportLeg(leftLeg, rightLeg, bodyCenterX = null) {
+            const referenceX = bodyCenterX ?? ((leftLeg.hip.x + rightLeg.hip.x) / 2);
+            const visibilityScore = (leg) => [leg.hip, leg.knee, leg.ankle]
+                .reduce((sum, point) => sum + (point.visibility ?? 1), 0) / 3;
+            const supportScore = (leg) => {
+                const ankleUnderHip = 1 - Math.min(1, Math.abs(leg.ankle.x - referenceX) / 0.28);
+                const kneeUnderHip = 1 - Math.min(1, Math.abs(leg.knee.x - referenceX) / 0.32);
+                const compactLeg = 1 - Math.min(1, Math.abs(leg.ankle.x - leg.hip.x) / 0.38);
+                const visible = visibilityScore(leg);
+                return ankleUnderHip * 0.45 + kneeUnderHip * 0.25 + compactLeg * 0.2 + visible * 0.1;
+            };
+            const leftScore = supportScore(leftLeg);
+            const rightScore = supportScore(rightLeg);
+
+            if (Math.abs(leftScore - rightScore) > 0.08) {
+                return leftScore > rightScore ? { side: '运动员左腿', ...leftLeg } : { side: '运动员右腿', ...rightLeg };
+            }
+
+            const leftAngle = calculateAngle(leftLeg.hip, leftLeg.knee, leftLeg.ankle);
+            const rightAngle = calculateAngle(rightLeg.hip, rightLeg.knee, rightLeg.ankle);
+            return leftAngle <= rightAngle ? { side: '运动员左腿', ...leftLeg } : { side: '运动员右腿', ...rightLeg };
+        }
+
         function formatTime(seconds) {
             if (isNaN(seconds)) return "00:00";
             const mins = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function rotatePoint(point, angleDegrees, center = { x: 0.5, y: 0.5 }) {
+            const radians = (angleDegrees * Math.PI) / 180;
+            const cos = Math.cos(radians);
+            const sin = Math.sin(radians);
+            const dx = point.x - center.x;
+            const dy = point.y - center.y;
+            return {
+                ...point,
+                x: center.x + dx * cos - dy * sin,
+                y: center.y + dx * sin + dy * cos
+            };
         }
 
         // 2. 完美的 Tab 切换逻辑
@@ -584,50 +789,79 @@
             const fileSelected = document.getElementById('fileSelected');
             const uploadZone = document.getElementById('uploadZone');
             const analyzeBioBtn = document.getElementById('analyzeBioBtn');
+            const canvasElement = document.getElementById('outputCanvas');
+            const canvasCtx = canvasElement.getContext('2d');
             
             videoUpload.value = '';
             videoElement.pause();
+            bioFrameLoopScheduled = false;
+            bioFrameLoopRunning = false;
+            if (window.currentBioVideoUrl) {
+                URL.revokeObjectURL(window.currentBioVideoUrl);
+                window.currentBioVideoUrl = null;
+            }
             videoElement.src = '';
+            window.bioAnalysisStarted = false;
             fileSelected.classList.add('hidden');
             uploadZone.classList.remove('hidden');
             analyzeBioBtn.disabled = true;
             analyzeBioBtn.classList.add('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
-            analyzeBioBtn.classList.remove('bg-gradient-to-r', 'from-skating-pro', 'to-purple-700');
+            analyzeBioBtn.classList.remove('bg-gradient-to-r', 'from-skating-pro', 'to-purple-700', 'text-white', 'hover:from-purple-600', 'hover:to-purple-800');
             analyzeBioBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 请先上传视频';
             document.getElementById('bioResults').classList.add('hidden');
             document.getElementById('bioEmptyState').classList.remove('hidden');
+            document.getElementById('liveKneeAngle').innerText = "--°";
+            document.getElementById('liveLeanAngle').innerText = "--°";
+            document.getElementById('livePelvisHeight').innerText = "--%";
+            document.getElementById('liveRecoverySpeed').innerText = "--";
+            document.getElementById('aiFeedbackTextCV').innerText = "等待计算结果... 慢速播放中正在实时抓取身体关键点与力学状态。";
+            document.getElementById('bioScrubber').value = 0;
+            document.getElementById('currentTimeUI').innerText = "00:00";
+            document.getElementById('durationTimeUI').innerText = "00:00";
+            document.getElementById('playPauseIcon').className = "fa-solid fa-pause";
+            document.getElementById('playPauseText').innerText = "暂停";
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         }
 
         // 4. 阶段训练日历生成数据库与自适应逻辑
         const plansDatabase = {
             lean: {
-                title: "弯道倾斜角极限攻坚",
+                title: "技术基础与弯道控制",
+                desc: "4次上冰技术周：每次冰前30分钟陆地热身，另配3次陆地专项/恢复，优先提高姿态、压刃和交叉步质量。",
                 days: [
-                    { id: "lean_mon", name: "周一 (陆地)", task: "3组 20分钟弯道滑板侧向重心偏置牵引练习", points: 50 },
-                    { id: "lean_tue", name: "周二 (冰上)", task: "5组 弯道极限单脚惯性长弧度滑行 (寻找45°倾角边界)", points: 80 },
-                    { id: "lean_wed", name: "周三 (陆地)", task: "4组 20次单腿支撑深蹲 + 离心拉伸器抗阻", points: 50 },
-                    { id: "lean_thu", name: "周四 (冰上)", task: "5圈 弯道牵引带抗阻拉伸切冰训练 (强制下压重心)", points: 80 },
-                    { id: "lean_fri", name: "周五 (恢复)", task: "30分钟 下肢泡沫轴深度肌肉排酸松解", points: 30 }
+                    { id: "jd_tech_mon", name: "周一 (冰前30min + 上冰60min)", type: "技术冰", intensity: "中", task: "冰前：动态热身、髋踝激活、干地滑行姿势 6组20秒。冰上：低姿势滑行、外刃压刃、弯道入口路线；6-8组轻中速交叉步，组间充分恢复。", points: 30 },
+                    { id: "jd_tech_tue", name: "周二 (陆地专项40min)", type: "陆地专项", intensity: "中", task: "单腿平衡、侧弓步、臀桥、核心抗旋转、弹力带髋外展；动作质量优先，不做大重量。", points: 20 },
+                    { id: "jd_tech_wed", name: "周三 (冰前30min + 上冰60min)", type: "技能巩固", intensity: "中", task: "冰前：灵敏梯 + 脚踝稳定。冰上：直道到弯道衔接、出弯加速 4组、技术圈 4组；每组只追求动作完整。", points: 30 },
+                    { id: "jd_tech_thu", name: "周四 (陆地恢复35min)", type: "恢复", intensity: "低", task: "轻松骑车/慢跑 20分钟 + 髋屈肌、腘绳肌、小腿拉伸；不做高强度间歇。", points: 15 },
+                    { id: "jd_tech_fri", name: "周五 (冰前30min + 上冰60min)", type: "弯道控制", intensity: "中", task: "冰前：侧向移动和核心激活。冰上：弯道路线、肩髋对齐、交叉步节奏；最后做2组轻快技术圈。", points: 30 },
+                    { id: "jd_tech_sat", name: "周六 (冰前30min + 上冰70min)", type: "综合技术", intensity: "中", task: "冰前：动态热身。冰上：把本周姿态、压刃、弯道节奏串成完整圈；可做轻量计时但不追求极限。", points: 30 },
+                    { id: "jd_tech_sun", name: "周日 (陆地可选/休息30min)", type: "恢复休息", intensity: "低", task: "优先休息；如身体状态好，做散步、泡沫轴、轻柔拉伸和训练日志复盘。", points: 10 }
                 ]
             },
             bounce: {
-                title: "直道骨盆高度稳定性强化",
+                title: "速度窗口与500m配速",
+                desc: "4次上冰速度周：每次冰前30分钟陆地热身，另配3次陆地专项/恢复；保留短高质量速度刺激，避免连续高乳酸日。",
                 days: [
-                    { id: "bounce_mon", name: "周一 (陆地)", task: "4组 45秒静态低重心直道发力滑跑姿势模拟", points: 50 },
-                    { id: "bounce_tue", name: "周二 (冰上)", task: "3圈 双手锁背直道低滑行高度测试 (骨盆波动<5%)", points: 80 },
-                    { id: "bounce_wed", name: "周三 (陆地)", task: "5组 15次负重静态深蹲 + 核心平板支撑锁死", points: 60 },
-                    { id: "bounce_thu", name: "周四 (冰上)", task: "400m 直道纯交替单脚蹬冰发力均匀度校准", points: 80 },
-                    { id: "bounce_fri", name: "周五 (恢复)", task: "40分钟 腹部核心与腰部肌肉抗代偿拉伸", points: 30 }
+                    { id: "jd_speed_mon", name: "周一 (冰前30min + 上冰60min)", type: "起跑速度", intensity: "中-高", task: "冰前：动态热身 + 6组8秒短冲刺。冰上：起跑 6-8次 + 100m 技术加速 4-6组；每组完全恢复。", points: 35 },
+                    { id: "jd_speed_tue", name: "周二 (陆地专项40min)", type: "神经速度", intensity: "中", task: "弹力带启动、跳绳、灵敏梯、侧向移动；快而轻，不做疲劳堆积。", points: 20 },
+                    { id: "jd_speed_wed", name: "周三 (冰前30min + 上冰65min)", type: "配速练习", intensity: "中", task: "冰前：髋踝激活。冰上：2-3组 300m-500m 分段配速，观察最后100m姿态是否散掉；组间休息足够。", points: 35 },
+                    { id: "jd_speed_thu", name: "周四 (陆地恢复30-40min)", type: "恢复", intensity: "低", task: "低强度有氧 + 拉伸；如果腿沉或睡眠不足，改为完全休息。", points: 15 },
+                    { id: "jd_speed_fri", name: "周五 (冰前30min + 上冰60min)", type: "短距离质量", intensity: "中", task: "冰前：核心和脚踝稳定。冰上：4-6组 150m-200m 技术速度，记录最稳的2组，不用每组拼最大。", points: 30 },
+                    { id: "jd_speed_sat", name: "周六 (冰前30min + 上冰70min)", type: "500m模拟", intensity: "中-高", task: "冰前：常规热身。冰上：1-2组 500m 分段或计时，重点看Lap 3-Lap 4衰减；总量控制。", points: 35 },
+                    { id: "jd_speed_sun", name: "周日 (陆地可选/休息30min)", type: "恢复休息", intensity: "低", task: "散步、泡沫轴、拉伸、训练日志；若周六强度高，周日只休息。", points: 10 }
                 ]
             },
             endurance: {
-                title: "末圈无氧耐力突破 (抗乳酸)",
+                title: "比赛周与恢复管理",
+                desc: "4次上冰比赛周：每次冰前30分钟陆地热身，另配3次陆地专项/恢复；减少总量，保留速度感觉，强化赛前准备和赛后复盘。",
                 days: [
-                    { id: "endur_mon", name: "周一 (陆地)", task: "3组 3分钟高频陆地跳台(跳箱)间歇跃跑", points: 60 },
-                    { id: "endur_tue", name: "周二 (冰上)", task: "3组 1000m 阶梯减速跑 (模拟乳酸高压下的高负荷滑行)", points: 90 },
-                    { id: "endur_wed", name: "周三 (陆地)", task: "40分钟 极低心率(Zone 2)有氧单车排乳酸筑基训练", points: 40 },
-                    { id: "endur_thu", name: "周四 (冰上)", task: "4组 500m 极速末圈姿势保持对抗演练", points: 90 },
-                    { id: "endur_fri", name: "周五 (恢复)", task: "冷热水交替淋浴排毒 + 下肢肌肉无氧代偿恢复", points: 30 }
+                    { id: "jd_race_mon", name: "周一 (冰前30min + 上冰55min)", type: "技术校准", intensity: "中", task: "冰前：动态活动度和核心激活。冰上：轻中速技术圈 + 2-3组短距离加速；确认刀、鞋、弯道路线。", points: 25 },
+                    { id: "jd_race_tue", name: "周二 (陆地专项30min)", type: "灵活性", intensity: "低", task: "动态活动度、脚踝稳定、轻松拉伸；补水和睡眠记录。", points: 15 },
+                    { id: "jd_race_wed", name: "周三 (冰前30min + 上冰50min)", type: "赛前唤醒", intensity: "中", task: "冰前：低量热身。冰上：起跑 3-4次 + 1-2组比赛节奏滑；结束时身体应感觉轻。", points: 25 },
+                    { id: "jd_race_thu", name: "周四 (陆地恢复30min)", type: "恢复", intensity: "低", task: "散步或轻松骑车 20分钟 + 拉伸；检查装备、比赛流程、热身清单。", points: 10 },
+                    { id: "jd_race_fri", name: "周五 (冰前30min + 上冰45-55min)", type: "赛前速度感", intensity: "低-中", task: "冰前：常规热身。冰上：少量技术圈和2组短加速；避免疲劳，把速度感留到比赛日。", points: 20 },
+                    { id: "jd_race_sat", name: "周六 (冰前30min + 比赛/计时)", type: "比赛日", intensity: "可变", task: "冰前按固定流程热身。比赛/计时后记录起跑、弯道、末圈感受；10分钟轻松放松。", points: 25 },
+                    { id: "jd_race_sun", name: "周日 (陆地可选/休息30min)", type: "复盘恢复", intensity: "低", task: "优先休息；可做轻柔拉伸和泡沫轴。整理比赛数据，用结果决定下周模板。", points: 10 }
                 ]
             }
         };
@@ -644,6 +878,7 @@
 
             const plan = plansDatabase[type];
             document.getElementById('planTargetTitle').innerText = plan.title;
+            document.getElementById('planTargetDesc').innerText = plan.desc;
             
             const calendarGrid = document.getElementById('calendarGrid');
             calendarGrid.innerHTML = ''; 
@@ -667,7 +902,11 @@
                     <div>
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-bold text-slate-400">${day.name}</span>
-                            <span class="text-[10px] bg-slate-700 text-skating-accent px-1.5 py-0.5 rounded-full font-bold"><i class="fa-solid fa-bolt mr-0.5"></i>+${day.points}</span>
+                            <span class="text-[10px] bg-slate-700 text-skating-accent px-1.5 py-0.5 rounded-full font-bold"><i class="fa-solid fa-check mr-0.5"></i>+${day.points}</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1 mb-2">
+                            <span class="text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20 px-1.5 py-0.5 rounded">${day.type}</span>
+                            <span class="text-[10px] bg-slate-900 text-slate-300 border border-slate-700 px-1.5 py-0.5 rounded">强度: ${day.intensity}</span>
                         </div>
                         <p class="text-xs text-white leading-relaxed font-semibold pr-4">${day.task}</p>
                     </div>
@@ -700,128 +939,146 @@
         window.goToPlanningAndLoad = goToPlanningAndLoad;
         window.generatePlan = generatePlan;
         window.resetUpload = resetUpload;
+        window.calculateSkatingAge = calculateSkatingAge;
+        window.getUSSpeedskatingDivision = getUSSpeedskatingDivision;
+        window.updateSkatingAgeBadge = updateSkatingAgeBadge;
+
+        document.addEventListener('DOMContentLoaded', updateSkatingAgeBadge);
     </script>
+
+    <script src="./firebase-config.js"></script>
 
     <!-- 🌟 同步模块：专职 Firebase 数据同步，安全升级 window.checkTask 行为 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, runTransaction, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase 动态容灾载入
+        // Firebase 动态容灾载入：Vercel 构建会生成 window.__BLAZE_FIREBASE_CONFIG__
         let firebaseConfig;
         try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-                apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: ""
-            };
+            firebaseConfig = typeof __firebase_config !== 'undefined'
+                ? JSON.parse(__firebase_config)
+                : window.__BLAZE_FIREBASE_CONFIG__;
         } catch (e) {
-            firebaseConfig = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
+            firebaseConfig = null;
         }
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'blaze-skate-academy';
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        if (!firebaseConfig || !firebaseConfig.apiKey || !firebaseConfig.projectId) {
+            document.getElementById('fbSyncIndicator').innerText = "● 未配置";
+            document.getElementById('fbSyncIndicator').className = "text-amber-400 font-bold";
+            console.warn("Firebase config missing. Set Vercel environment variables before deploying.");
+        } else {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
 
-        let userId = null;
-        let lindsayProfileDocRef = null;
-        let lindsayProfileData = { points: 2450 };
+            let userId = null;
+            let lindsayProfileDocRef = null;
+            let lindsayProfileData = { points: 0 };
 
-        async function authenticateAndSync() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Firebase Auth Failed:", err);
-            }
-        }
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                document.getElementById('fbSyncIndicator').innerText = "● 已连接";
-                document.getElementById('fbSyncIndicator').className = "text-skating-success font-bold animate-pulse";
-
-                // U13 年龄与阶段精细化绑定
-                document.getElementById('lindsayAgeBadge').innerHTML = `Lindsay (2015-01) <span class="bg-purple-600/30 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded-full text-[10px] ml-1">U13 组</span>`;
-
-                // A. 建立/获取 Lindsay 的专属 Profile 档案
-                lindsayProfileDocRef = doc(db, 'artifacts', appId, 'users', userId, 'profile', 'lindsay');
+            async function authenticateAndSync() {
                 try {
-                    const profileSnap = await getDoc(lindsayProfileDocRef);
-                    if (!profileSnap.exists()) {
-                        await setDoc(lindsayProfileDocRef, {
-                            name: "Lindsay",
-                            birthMonth: "2015-01",
-                            points: window.globalPointsVal || 2450,
-                            lastActive: new Date().toISOString()
-                        });
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
                     }
-                } catch (e) {
-                    console.error("Profile set failed:", e);
+                } catch (err) {
+                    console.error("Firebase Auth Failed:", err);
                 }
+            }
 
-                // 绑定 Profile 实时监视器
-                onSnapshot(lindsayProfileDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        lindsayProfileData = docSnap.data();
-                        window.globalPointsVal = lindsayProfileData.points;
-                        document.getElementById('globalPoints').innerText = lindsayProfileData.points;
-                    }
-                }, (error) => {
-                    console.error("Profile sync failed:", error);
-                });
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    document.getElementById('fbSyncIndicator').innerText = "● 已连接";
+                    document.getElementById('fbSyncIndicator').className = "text-skating-success font-bold animate-pulse";
 
-                // B. 绑定打卡任务实时监视器
-                const completedTasksCol = collection(db, 'artifacts', appId, 'users', userId, 'completedTasks');
-                onSnapshot(completedTasksCol, (querySnap) => {
-                    window.completedTaskIds = [];
-                    querySnap.forEach((doc) => {
-                        window.completedTaskIds.push(doc.data().taskId);
-                    });
-                    
-                    if (window.currentActiveFocus) {
-                        window.generatePlan(window.currentActiveFocus);
-                    }
-                }, (error) => {
-                    console.error("Tasks sync failed:", error);
-                });
+                    // 按美国速滑赛季冰龄绑定 Lindsay 的组别
+                    window.updateSkatingAgeBadge();
 
-                // 🌟 接管全局 window.checkTask 函数，实现无缝云同步
-                window.checkTask = async function(btn, taskId, points) {
-                    if (!userId) return;
-                    btn.disabled = true;
-                    btn.className = "mt-3 w-full bg-slate-800 text-slate-500 font-bold py-1.5 px-3 rounded-lg text-[10px] flex items-center justify-center gap-1 cursor-not-allowed";
-                    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 云端写入中...';
-
+                    // A. 建立/获取 Lindsay 的专属 Profile 档案
+                    lindsayProfileDocRef = doc(db, 'artifacts', appId, 'users', userId, 'profile', 'lindsay');
                     try {
-                        const completedTasksCol = collection(db, 'artifacts', appId, 'users', userId, 'completedTasks');
-                        await addDoc(completedTasksCol, {
-                            taskId: taskId,
-                            points: points,
-                            completedAt: new Date().toISOString()
-                        });
-
-                        if (lindsayProfileDocRef) {
-                            const newTotalPoints = (lindsayProfileData.points || 0) + points;
-                            await updateDoc(lindsayProfileDocRef, {
-                                points: newTotalPoints
+                        const profileSnap = await getDoc(lindsayProfileDocRef);
+                        if (!profileSnap.exists()) {
+                            await setDoc(lindsayProfileDocRef, {
+                                name: "Lindsay",
+                                birthDate: window.lindsayBirthDate,
+                                points: window.globalPointsVal || 0,
+                                lastActive: new Date().toISOString()
                             });
                         }
-                    } catch (err) {
-                        console.error("Firestore write transaction failed:", err);
-                        btn.disabled = false;
-                        btn.className = "mt-3 w-full bg-red-500 text-white font-bold py-1.5 px-3 rounded-lg text-[10px]";
-                        btn.innerText = "同步失败，点击重试";
+                    } catch (e) {
+                        console.error("Profile set failed:", e);
                     }
-                };
-            }
-        });
 
-        authenticateAndSync();
+                    // 绑定 Profile 实时监视器
+                    onSnapshot(lindsayProfileDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            lindsayProfileData = docSnap.data();
+                            window.globalPointsVal = lindsayProfileData.points;
+                            document.getElementById('globalPoints').innerText = lindsayProfileData.points;
+                        }
+                    }, (error) => {
+                        console.error("Profile sync failed:", error);
+                    });
+
+                    // B. 绑定打卡任务实时监视器
+                    const completedTasksCol = collection(db, 'artifacts', appId, 'users', userId, 'completedTasks');
+                    onSnapshot(completedTasksCol, (querySnap) => {
+                        window.completedTaskIds = [];
+                        querySnap.forEach((doc) => {
+                            window.completedTaskIds.push(doc.data().taskId);
+                        });
+                        
+                        if (window.currentActiveFocus) {
+                            window.generatePlan(window.currentActiveFocus);
+                        }
+                    }, (error) => {
+                        console.error("Tasks sync failed:", error);
+                    });
+
+                    // 🌟 接管全局 window.checkTask 函数，实现无缝云同步
+                    window.checkTask = async function(btn, taskId, points) {
+                        if (!userId) return;
+                        btn.disabled = true;
+                        btn.className = "mt-3 w-full bg-slate-800 text-slate-500 font-bold py-1.5 px-3 rounded-lg text-[10px] flex items-center justify-center gap-1 cursor-not-allowed";
+                        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 云端写入中...';
+
+                        try {
+                            const taskDocRef = doc(db, 'artifacts', appId, 'users', userId, 'completedTasks', taskId);
+                            await runTransaction(db, async (transaction) => {
+                                const taskSnap = await transaction.get(taskDocRef);
+                                if (taskSnap.exists()) return;
+
+                                transaction.set(taskDocRef, {
+                                    taskId: taskId,
+                                    points: points,
+                                    completedAt: serverTimestamp()
+                                });
+
+                                if (lindsayProfileDocRef) {
+                                    transaction.update(lindsayProfileDocRef, {
+                                        points: increment(points),
+                                        lastActive: new Date().toISOString()
+                                    });
+                                }
+                            });
+                        } catch (err) {
+                            console.error("Firestore write transaction failed:", err);
+                            btn.disabled = false;
+                            btn.className = "mt-3 w-full bg-red-500 text-white font-bold py-1.5 px-3 rounded-lg text-[10px]";
+                            btn.innerText = "同步失败，点击重试";
+                        }
+                    };
+                }
+            });
+
+            authenticateAndSync();
+        }
     </script>
 
     <!-- 🌟 全局非 Module 视觉与 AI 控制台代码 -->
@@ -834,6 +1091,11 @@
         let lastLeftAnkle = null;
         let lastRightAnkle = null;
         let lastTime = 0;
+        let bioFrameLoopRunning = false;
+        let bioFrameLoopScheduled = false;
+        let bioPoseSendInFlight = false;
+        window.bioAnalysisStarted = false;
+        window.currentBioVideoUrl = null;
 
         function resizeCanvas() {
             const videoElement = document.getElementById('inputVideo');
@@ -850,6 +1112,14 @@
 
         function initPoseModel() {
             if (poseModel) return;
+            if (typeof Pose === 'undefined') {
+                document.getElementById('modelLoadStatus').innerText = "模型脚本加载失败，请检查网络";
+                document.getElementById('modelLoadStatus').className = "text-red-400 font-semibold";
+                document.getElementById('loadingModel').style.display = 'none';
+                document.getElementById('cvStatusText').innerText = "STATUS: MODEL LOAD FAILED";
+                document.getElementById('cvStatusText').classList.add('text-red-400');
+                return;
+            }
             poseModel = new Pose({locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
             }});
@@ -870,6 +1140,15 @@
                 document.getElementById('modelLoadStatus').className = "text-skating-success font-semibold";
                 document.getElementById('cvStatusText').innerText = "STATUS: MODEL READY (LOCAL EDGE)";
                 document.getElementById('cvStatusText').classList.add('text-skating-success');
+            }).catch((error) => {
+                console.error("Pose model warmup failed:", error);
+                poseModel = null;
+                isModelReady = false;
+                document.getElementById('loadingModel').style.display = 'none';
+                document.getElementById('modelLoadStatus').innerText = "模型预热失败";
+                document.getElementById('modelLoadStatus').className = "text-red-400 font-semibold";
+                document.getElementById('cvStatusText').innerText = "STATUS: MODEL WARMUP FAILED";
+                document.getElementById('cvStatusText').classList.add('text-red-400');
             });
         }
 
@@ -905,7 +1184,6 @@
 
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
             // 绘制智能重力网格
             if (gravityGridToggle && gravityGridToggle.checked) {
@@ -954,7 +1232,17 @@
                 const rAnkle = landmarks[28], lAnkle = landmarks[27];
                 const rShoulder = landmarks[12], lShoulder = landmarks[11];
 
-                const kneeFlexionAngle = calculateAngle(rHip, rKnee, rAnkle);
+                const shoulderMidX = (lShoulder.x + rShoulder.x) / 2;
+                const shoulderMidY = (lShoulder.y + rShoulder.y) / 2;
+                const hipMidX = (lHip.x + rHip.x) / 2;
+                const hipMidY = (lHip.y + rHip.y) / 2;
+
+                const supportLeg = pickSupportLeg(
+                    { hip: lHip, knee: lKnee, ankle: lAnkle },
+                    { hip: rHip, knee: rKnee, ankle: rAnkle },
+                    hipMidX
+                );
+                const kneeFlexionAngle = calculateAngle(supportLeg.hip, supportLeg.knee, supportLeg.ankle);
                 document.getElementById('liveKneeAngle').innerText = kneeFlexionAngle + "°";
                 
                 if (kneeFlexionAngle > 115) {
@@ -964,12 +1252,7 @@
                 } else {
                     document.getElementById('liveKneeAngle').className = "text-3xl font-black text-white";
                 }
-
-                const shoulderMidX = (lShoulder.x + rShoulder.x) / 2;
-                const shoulderMidY = (lShoulder.y + rShoulder.y) / 2;
-                const hipMidX = (lHip.x + rHip.x) / 2;
-                const hipMidY = (lHip.y + rHip.y) / 2;
-                
+                 
                 let leanRadians = Math.atan2(hipMidY - shoulderMidY, hipMidX - shoulderMidX);
                 let leanAngle = Math.abs(Math.round(leanRadians * 180 / Math.PI) - 90);
                 document.getElementById('liveLeanAngle').innerText = leanAngle + "°";
@@ -1020,7 +1303,7 @@
 
                 if (kneeFlexionAngle > 115) {
                     consoleOutput.innerHTML = `> ${alignmentNote}<br>
-                    > <span class="text-red-400"> Warning</span>: 支撑膝弯曲不足 ${kneeFlexionAngle}°。直道蹬冰受限！<br>
+                    > <span class="text-red-400"> Warning</span>: ${supportLeg.side}支撑膝弯曲不足 ${kneeFlexionAngle}°。直道蹬冰受限！<br>
                     <button onclick="goToPlanningAndLoad('bounce')" class="mt-2 bg-skating-accent hover:bg-orange-600 text-white text-[10px] px-2.5 py-1 rounded font-bold transition-all"><i class="fa-solid fa-calendar-plus mr-1"></i>一键应用[直道骨盆稳定]专项课表</button>`;
                 } else if (leanAngle > 52) {
                     consoleOutput.innerHTML = `> ${alignmentNote}<br>
@@ -1038,29 +1321,75 @@
             canvasCtx.restore();
         }
 
-        async function processVideoFrame() {
+        function processVideoFrame() {
+            bioFrameLoopScheduled = false;
             const videoElement = document.getElementById('inputVideo');
             const canvasElement = document.getElementById('outputCanvas');
             const bioScrubber = document.getElementById('bioScrubber');
             const currentTimeUI = document.getElementById('currentTimeUI');
             const durationTimeUI = document.getElementById('durationTimeUI');
 
-            if (videoElement && !videoElement.paused && !videoElement.ended && isModelReady && poseModel) {
-                if (canvasElement.width !== videoElement.videoWidth) {
-                    canvasElement.width = videoElement.videoWidth;
-                    canvasElement.height = videoElement.videoHeight;
-                }
-                await poseModel.send({image: videoElement});
-                if (videoElement.duration) {
-                    const pct = (videoElement.currentTime / videoElement.duration) * 100;
-                    bioScrubber.value = pct;
-                    currentTimeUI.innerText = formatTime(videoElement.currentTime);
-                    durationTimeUI.innerText = formatTime(videoElement.duration);
-                }
+            if (!videoElement || videoElement.paused || videoElement.ended) {
+                bioFrameLoopRunning = false;
+                return;
+            }
+
+            bioFrameLoopRunning = true;
+
+            if (canvasElement.width !== videoElement.videoWidth) {
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+            }
+
+            if (videoElement.duration) {
+                const pct = (videoElement.currentTime / videoElement.duration) * 100;
+                bioScrubber.value = pct;
+                currentTimeUI.innerText = formatTime(videoElement.currentTime);
+                durationTimeUI.innerText = formatTime(videoElement.duration);
+            }
+
+            const canvasCtx = canvasElement.getContext('2d');
+            if (!isModelReady || !poseModel) {
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            }
+
+            if (isModelReady && poseModel && !bioPoseSendInFlight) {
+                bioPoseSendInFlight = true;
+                sendPoseFrameWithTimeout(videoElement)
+                    .catch((error) => {
+                        console.warn("Video frame analysis skipped:", error);
+                        document.getElementById('cvStatusText').innerText = "STATUS: TRACKING RETRYING";
+                    })
+                    .finally(() => {
+                        bioPoseSendInFlight = false;
+                    });
+            }
+
+            if (!bioFrameLoopScheduled) {
+                bioFrameLoopScheduled = true;
                 requestAnimationFrame(processVideoFrame);
             }
         }
 
+        function startBioFrameLoop() {
+            const videoElement = document.getElementById('inputVideo');
+            if (!videoElement || videoElement.paused || videoElement.ended || bioFrameLoopScheduled) return;
+            bioFrameLoopRunning = true;
+            bioFrameLoopScheduled = true;
+            requestAnimationFrame(processVideoFrame);
+        }
+
+        function sendPoseFrameWithTimeout(videoElement, timeoutMs = 1200) {
+            const sourceCanvas = document.createElement('canvas');
+            sourceCanvas.width = videoElement.videoWidth || 1;
+            sourceCanvas.height = videoElement.videoHeight || 1;
+            const sourceCtx = sourceCanvas.getContext('2d');
+            sourceCtx.drawImage(videoElement, 0, 0, sourceCanvas.width, sourceCanvas.height);
+            return Promise.race([
+                poseModel.send({image: sourceCanvas}),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('pose frame timeout')), timeoutMs))
+            ]);
+        }
         // 绑定页面初始化事件
         document.addEventListener('DOMContentLoaded', () => {
             const videoElement = document.getElementById('inputVideo');
@@ -1074,8 +1403,26 @@
             const bioScrubber = document.getElementById('bioScrubber');
             const currentTimeUI = document.getElementById('currentTimeUI');
             const durationTimeUI = document.getElementById('durationTimeUI');
+            const cameraRollSlider = document.getElementById('cameraRollSlider');
+            const rollValueText = document.getElementById('rollValueText');
+            const calibStatusBadge = document.getElementById('calibStatusBadge');
 
             uploadZone.addEventListener('click', () => videoUpload.click());
+
+            cameraRollSlider.addEventListener('input', async (e) => {
+                tiltCorrectionAngle = parseFloat(e.target.value) || 0;
+                rollValueText.innerText = `${tiltCorrectionAngle.toFixed(1)}°`;
+                if (Math.abs(tiltCorrectionAngle) <= 1) {
+                    calibStatusBadge.innerText = "已校准";
+                    calibStatusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400";
+                } else {
+                    calibStatusBadge.innerText = "手动补偿";
+                    calibStatusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-bold bg-orange-500/10 border border-orange-500/30 text-skating-accent";
+                }
+                if (videoElement.paused && isModelReady && poseModel && videoElement.readyState >= 2) {
+                    await poseModel.send({image: videoElement});
+                }
+            });
 
             videoUpload.addEventListener('change', (e) => {
                 const file = e.target.files[0];
@@ -1083,7 +1430,9 @@
                     uploadZone.classList.add('hidden');
                     document.getElementById('fileSelected').classList.remove('hidden');
                     document.getElementById('fileNameDisplay').innerText = file.name;
-                    videoElement.src = URL.createObjectURL(file);
+                    if (window.currentBioVideoUrl) URL.revokeObjectURL(window.currentBioVideoUrl);
+                    window.currentBioVideoUrl = URL.createObjectURL(file);
+                    videoElement.src = window.currentBioVideoUrl;
                     
                     analyzeBioBtn.disabled = false;
                     analyzeBioBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
@@ -1093,6 +1442,11 @@
             });
 
             analyzeBioBtn.addEventListener('click', function() {
+                if (window.bioAnalysisStarted) {
+                    resetUpload();
+                    return;
+                }
+                window.bioAnalysisStarted = true;
                 document.getElementById('bioEmptyState').classList.add('hidden');
                 document.getElementById('bioResults').classList.remove('hidden');
                 analyzeBioBtn.innerHTML = '<i class="fa-solid fa-arrow-rotate-left"></i> 替换或重置测试视频';
@@ -1113,7 +1467,7 @@
                         const checkModelReady = setInterval(() => {
                             if (isModelReady) {
                                 clearInterval(checkModelReady);
-                                processVideoFrame(); 
+                                startBioFrameLoop(); 
                             }
                         }, 200);
                     });
@@ -1126,13 +1480,16 @@
                     videoElement.play();
                     playPauseIcon.className = "fa-solid fa-pause";
                     playPauseText.innerText = "暂停";
-                    processVideoFrame();
+                    startBioFrameLoop();
                 } else {
                     videoElement.pause();
+                    bioFrameLoopScheduled = false;
                     playPauseIcon.className = "fa-solid fa-play";
                     playPauseText.innerText = "播放";
                 }
             });
+
+            videoElement.addEventListener('playing', startBioFrameLoop);
 
             playbackSpeed.addEventListener('change', (e) => {
                 videoElement.playbackRate = parseFloat(e.target.value);
@@ -1160,17 +1517,129 @@
         // 🌟 TAB 1 - 智能配速优化 (Chart.js)
         // ==========================================
         let pacingChart = null;
+        let currentPacingDistance = '500';
+        const pacingDistanceConfigs = {
+            '500': {
+                title: '500m',
+                labels: ['起跑前半圈', 'Lap 1', 'Lap 2', 'Lap 3', 'Lap 4'],
+                defaults: [7.05, 9.10, 9.42, 9.85, 10.30],
+                focus: '起跑、前半程速度、末圈衰减'
+            },
+            '777': {
+                title: '777m',
+                labels: ['起跑圈', '第1圈', '第2圈', '第3圈', '第4圈', '第5圈', '冲刺圈'],
+                defaults: [10.20, 10.75, 10.95, 11.20, 11.45, 11.80, 6.40],
+                focus: '中距离节奏、弯道效率、后半程姿态保持'
+            },
+            '1000': {
+                title: '1000m',
+                labels: ['起跑圈', '第1圈', '第2圈', '第3圈', '第4圈', '第5圈', '第6圈', '第7圈', '冲刺圈'],
+                defaults: [10.35, 10.90, 11.10, 11.35, 11.60, 11.95, 12.30, 12.70, 6.80],
+                focus: '有氧-无氧衔接、配速稳定性、末段抗疲劳'
+            }
+        };
         
-        function initPacingChart() {
+        function getPaceInputs() {
+            return Array.from(document.querySelectorAll('[data-pace-input]'))
+                .map((input) => parseFloat(input.value) || 0);
+        }
+
+        function getBenchmarkInputs() {
+            return Array.from(document.querySelectorAll('[data-benchmark-input]'))
+                .map((input) => parseFloat(input.value) || 0);
+        }
+
+        function renderPacingInputs() {
+            const config = pacingDistanceConfigs[currentPacingDistance];
+            const paceInputs = document.getElementById('paceInputs');
+            const benchmarkInputs = document.getElementById('benchmarkInputs');
+            document.getElementById('pacingChartTitle').innerText = `${config.title} 配速标杆比对`;
+
+            paceInputs.innerHTML = config.labels.map((label, index) => `
+                <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700">
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold">${label} (s)</label>
+                    <input type="number" step="0.01" data-pace-input="${index}" placeholder="--" class="w-full bg-transparent text-white font-mono font-bold text-lg focus:outline-none placeholder:text-slate-600">
+                </div>
+            `).join('');
+
+            benchmarkInputs.innerHTML = config.labels.map((label, index) => `
+                <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700">
+                    <label class="block text-[10px] text-slate-500 mb-1 font-bold">${label}</label>
+                    <input type="number" step="0.01" data-benchmark-input="${index}" value="${config.defaults[index].toFixed(2)}" class="w-full bg-transparent text-skating-success font-mono font-bold text-sm focus:outline-none">
+                </div>
+            `).join('');
+
+            document.querySelectorAll('[data-benchmark-input]').forEach((input) => {
+                input.addEventListener('input', () => {
+                    if (pacingChart) {
+                        pacingChart.data.labels = config.labels;
+                        pacingChart.data.datasets[0].data = getBenchmarkInputs();
+                        pacingChart.update();
+                    }
+                });
+            });
+        }
+
+        function resetPacingOutputs() {
+            if (pacingChart) {
+                pacingChart.destroy();
+                pacingChart = null;
+            }
+            clearPacingCanvas();
+            document.getElementById('lacticIndexVal').innerText = "--%";
+            document.getElementById('lacticLevel').innerText = "等待测算...";
+            document.getElementById('lacticLevel').className = "text-2xl font-black text-white";
+            document.getElementById('lacticLevelSub').innerText = "--";
+            document.getElementById('ratioTraining').innerText = "--";
+            document.getElementById('paceAIDesc').innerText = "请在左侧选择距离并填写实际分段，然后点击“生成配速衰减曲线”进行分析。";
+        }
+
+        function switchPacingDistance(distance) {
+            if (!pacingDistanceConfigs[distance]) return;
+            currentPacingDistance = distance;
+            document.querySelectorAll('.distance-btn').forEach((button) => {
+                const isActive = button.dataset.distance === distance;
+                button.className = isActive
+                    ? 'distance-btn bg-skating-neon text-white font-bold rounded-lg py-2 text-xs border border-skating-neon'
+                    : 'distance-btn bg-slate-800 text-slate-300 font-bold rounded-lg py-2 text-xs border border-slate-700 hover:border-skating-neon';
+            });
+            renderPacingInputs();
+            resetPacingOutputs();
+        }
+
+        function resetJuniorDBenchmark() {
+            const config = pacingDistanceConfigs[currentPacingDistance];
+            document.querySelectorAll('[data-benchmark-input]').forEach((input, index) => {
+                input.value = config.defaults[index].toFixed(2);
+            });
+            if (pacingChart) {
+                pacingChart.data.labels = config.labels;
+                pacingChart.data.datasets[0].data = getBenchmarkInputs();
+                pacingChart.update();
+            } else {
+                clearPacingCanvas();
+            }
+        }
+
+        function initPacingChart(paceData = getPaceInputs()) {
+            const config = pacingDistanceConfigs[currentPacingDistance];
             const ctx = document.getElementById('pacingChart').getContext('2d');
+            const benchmarkData = getBenchmarkInputs();
+            if (typeof Chart === 'undefined') {
+                drawPacingCanvas(paceData);
+                return;
+            }
+            if (pacingChart) {
+                pacingChart.destroy();
+            }
             pacingChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['起跑前半圈', 'Lap 1', 'Lap 2', 'Lap 3', 'Lap 4'],
+                    labels: config.labels,
                     datasets: [
                         {
-                            label: 'US NDP U13 (国家青少年梯队标杆)',
-                            data: [7.05, 9.10, 9.42, 9.85, 10.30], 
+                            label: 'US Junior D (11-12岁赛季冰龄标杆)',
+                            data: benchmarkData, 
                             borderColor: 'rgba(16, 185, 129, 0.6)', 
                             borderDash: [5, 5],
                             backgroundColor: 'transparent',
@@ -1179,7 +1648,7 @@
                         },
                         {
                             label: 'Lindsay 的测算配速',
-                            data: [7.25, 9.15, 9.62, 10.38, 11.20], 
+                            data: paceData, 
                             borderColor: '#0ea5e9', 
                             backgroundColor: 'rgba(14, 165, 233, 0.1)',
                             fill: true,
@@ -1213,25 +1682,415 @@
             });
         }
 
+        function clearPacingCanvas() {
+            const canvas = document.getElementById('pacingChart');
+            const wrapper = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            const width = Math.max(320, wrapper.clientWidth - 16);
+            const height = 244;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.45)';
+            ctx.font = '13px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('输入分段后生成配速衰减曲线', width / 2, height / 2);
+            ctx.textAlign = 'start';
+        }
+
+        function drawPacingCanvas(paceData) {
+            const canvas = document.getElementById('pacingChart');
+            const wrapper = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            const width = Math.max(320, wrapper.clientWidth - 16);
+            const height = 244;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, width, height);
+
+            const benchmark = getBenchmarkInputs();
+            const allValues = [...benchmark, ...paceData];
+            const min = Math.min(...allValues) - 0.4;
+            const max = Math.max(...allValues) + 0.5;
+            const labels = pacingDistanceConfigs[currentPacingDistance].labels;
+            const padding = { left: 42, right: 18, top: 20, bottom: 34 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            const xFor = (index) => padding.left + (chartWidth / Math.max(1, labels.length - 1)) * index;
+            const yFor = (value) => padding.top + chartHeight - ((value - min) / (max - min)) * chartHeight;
+
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+            ctx.lineWidth = 1;
+            ctx.font = '11px Inter, sans-serif';
+            ctx.fillStyle = '#94a3b8';
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (chartHeight / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+
+            labels.forEach((label, index) => {
+                ctx.fillText(label, xFor(index) - 14, height - 12);
+            });
+
+            function drawLine(values, color, dashed = false) {
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = dashed ? 2 : 3;
+                ctx.setLineDash(dashed ? [6, 6] : []);
+                ctx.beginPath();
+                values.forEach((value, index) => {
+                    const x = xFor(index);
+                    const y = yFor(value);
+                    if (index === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                values.forEach((value, index) => {
+                    const x = xFor(index);
+                    const y = yFor(value);
+                    ctx.beginPath();
+                    ctx.arc(x, y, dashed ? 3 : 5, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    if (!dashed) {
+                        ctx.fillStyle = '#e0f2fe';
+                        ctx.fillText(value.toFixed(2), x - 12, y - 10);
+                    }
+                });
+                ctx.restore();
+            }
+
+            drawLine(benchmark, 'rgba(16, 185, 129, 0.75)', true);
+            drawLine(paceData, '#0ea5e9');
+
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+            ctx.fillText('US Junior D 标杆', padding.left, 14);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText('Lindsay 测算配速', padding.left + 120, 14);
+        }
+
+        function calculatePacingAnalysis() {
+            const config = pacingDistanceConfigs[currentPacingDistance];
+            const paceData = getPaceInputs();
+            const valid = paceData.every((value) => Number.isFinite(value) && value > 0);
+            const benchmark = getBenchmarkInputs();
+            const benchmarkValid = benchmark.every((value) => Number.isFinite(value) && value > 0);
+
+            if (!valid) {
+                resetPacingOutputs();
+                document.getElementById('paceAIDesc').innerText = "请输入完整且大于 0 的圈速数据后再生成曲线。";
+                return;
+            }
+
+            if (!benchmarkValid) {
+                document.getElementById('paceAIDesc').innerText = "请先填写完整且大于 0 的 Junior D 标准，再生成曲线。";
+                return;
+            }
+
+            if (!pacingChart) {
+                initPacingChart(paceData);
+            } else {
+                pacingChart.data.labels = config.labels;
+                pacingChart.data.datasets[0].data = benchmark;
+                pacingChart.data.datasets[1].data = paceData;
+                pacingChart.update();
+            }
+
+            const mainSegments = currentPacingDistance === '500'
+                ? paceData.slice(1)
+                : paceData.slice(1, -1);
+            const benchmarkMainSegments = currentPacingDistance === '500'
+                ? benchmark.slice(1)
+                : benchmark.slice(1, -1);
+            const average = (values) => values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
+            const earlyAvg = average(mainSegments.slice(0, Math.min(2, mainSegments.length)));
+            const lateAvg = average(mainSegments.slice(Math.max(0, mainSegments.length - 2)));
+            const benchmarkEarlyAvg = average(benchmarkMainSegments.slice(0, Math.min(2, benchmarkMainSegments.length)));
+            const benchmarkLateAvg = average(benchmarkMainSegments.slice(Math.max(0, benchmarkMainSegments.length - 2)));
+            const decayPct = ((lateAvg - earlyAvg) / earlyAvg) * 100;
+            const benchmarkDecayPct = ((benchmarkLateAvg - benchmarkEarlyAvg) / benchmarkEarlyAvg) * 100;
+            const segmentJumps = mainSegments.slice(1).map((value, index) => value - mainSegments[index]);
+            const maxSegmentJump = segmentJumps.length ? Math.max(...segmentJumps) : 0;
+            const benchmarkJumps = benchmarkMainSegments.slice(1).map((value, index) => value - benchmarkMainSegments[index]);
+            const benchmarkMaxJump = benchmarkJumps.length ? Math.max(...benchmarkJumps) : 0;
+            const decayPenalty = Math.max(0, decayPct - benchmarkDecayPct) * 4;
+            const jumpPenalty = Math.max(0, maxSegmentJump - benchmarkMaxJump) * 8;
+            const lacticIndex = Math.max(0, Math.min(100, 100 - decayPenalty - jumpPenalty));
+            const totalTime = paceData.reduce((sum, value) => sum + value, 0);
+            const benchmarkTotal = benchmark.reduce((sum, value) => sum + value, 0);
+            const finishGap = paceData[paceData.length - 1] - benchmark[benchmark.length - 1];
+            const splitPattern = config.labels.join(' / ');
+
+            let level = "优秀";
+            let levelClass = "text-2xl font-black text-skating-success";
+            let levelSub = "后半程节奏接近标杆";
+            let ratio = "60:40";
+            let desc = `${config.title} 分段结构: ${splitPattern}。总成绩 ${totalTime.toFixed(2)}s，比 Junior D 标杆${totalTime >= benchmarkTotal ? '慢' : '快'} ${Math.abs(totalTime - benchmarkTotal).toFixed(2)}s。主滑圈段前段均速 ${earlyAvg.toFixed(2)}s，后段均速 ${lateAvg.toFixed(2)}s，后段衰减 ${decayPct.toFixed(1)}%，标杆衰减 ${benchmarkDecayPct.toFixed(1)}%。`;
+
+            if (decayPct > benchmarkDecayPct + 7 || maxSegmentJump > benchmarkMaxJump + 0.8 || finishGap > 0.7) {
+                level = "需强化";
+                levelClass = "text-2xl font-black text-red-400";
+                levelSub = "后半程掉速明显，优先补节奏耐受";
+                ratio = "45:55";
+                desc += ` 建议下一阶段围绕 ${config.focus}，加入分段追速、弯道姿态保持和短间歇乳酸耐受组合。`;
+            } else if (decayPct > benchmarkDecayPct + 3 || maxSegmentJump > benchmarkMaxJump + 0.35 || finishGap > 0.35) {
+                level = "稳定中等";
+                levelClass = "text-2xl font-black text-yellow-400";
+                levelSub = "中后程开始出现可见波动";
+                ratio = "55:45";
+                desc += ` 建议保留技术质量训练，同时增加 ${config.title} 的中后段控速与冲刺前姿态稳定练习。`;
+            } else {
+                desc += " 当前衰减控制良好，可以把训练重点放在起跑进入、弯道速度保持和末段冲刺质量。";
+            }
+
+            document.getElementById('lacticIndexVal').innerText = `${Math.round(lacticIndex)}%`;
+            document.getElementById('lacticLevel').innerText = level;
+            document.getElementById('lacticLevel').className = levelClass;
+            document.getElementById('lacticLevelSub').innerText = levelSub;
+            document.getElementById('ratioTraining').innerText = ratio;
+            document.getElementById('paceAIDesc').innerText = desc;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const calculatePaceBtn = document.getElementById('calculatePaceBtn');
+            const resetBenchmarkBtn = document.getElementById('resetBenchmarkBtn');
+            if (calculatePaceBtn) {
+                calculatePaceBtn.addEventListener('click', calculatePacingAnalysis);
+            }
+            if (resetBenchmarkBtn) {
+                resetBenchmarkBtn.addEventListener('click', resetJuniorDBenchmark);
+            }
+            document.querySelectorAll('.distance-btn').forEach((button) => {
+                button.addEventListener('click', () => switchPacingDistance(button.dataset.distance));
+            });
+            renderPacingInputs();
+            clearPacingCanvas();
+        });
+
         // ==========================================
-        // 🌟 TAB 4 - 器材智能调校 (F1 级底盘调校)
+        // 🌟 TAB 4 - 器材调校记录与复核清单
         // ==========================================
+        function collectRockerReadings(side) {
+            const selector = side === 'left' ? '[data-rocker-left]' : '[data-rocker-right]';
+            const attr = side === 'left' ? 'rockerLeft' : 'rockerRight';
+            return Array.from(document.querySelectorAll(selector))
+                .map((input) => ({
+                    point: Number(input.dataset[attr]),
+                    value: input.value.trim()
+                }))
+                .filter((entry) => entry.value);
+        }
+
+        function summarizeRockerReadings(label, readings) {
+            if (!readings.length) return `${label}: 未记录`;
+
+            const center = readings.find((entry) => entry.point === 0)?.value || '未记录';
+            const toe = readings
+                .filter((entry) => entry.point > 0)
+                .sort((a, b) => a.point - b.point)
+                .map((entry) => `+${entry.point}:${entry.value}`)
+                .join(' / ') || '未记录';
+            const tail = readings
+                .filter((entry) => entry.point < 0)
+                .sort((a, b) => a.point - b.point)
+                .map((entry) => `${entry.point}:${entry.value}`)
+                .join(' / ') || '未记录';
+
+            return `${label}: 0=${center}; 刀头 ${toe}; 刀尾 ${tail}`;
+        }
+
+        function parseGaugeNumber(value) {
+            const match = String(value || '').match(/-?\d+(\.\d+)?/);
+            return match ? Number(match[0]) : null;
+        }
+
+        function valueAt(readings, point) {
+            const reading = readings.find((entry) => entry.point === point);
+            return reading ? parseGaugeNumber(reading.value) : null;
+        }
+
+        function analyzeRockerSide(label, readings) {
+            const hints = [];
+            const center = valueAt(readings, 0);
+
+            if (center === null) {
+                hints.push(`${label}缺少中心点 0 读数，无法判断曲线是否从中心平顺展开。`);
+                return hints;
+            }
+
+            [
+                { name: '刀头', points: [1, 2, 3, 4, 5, 6, 7, 8] },
+                { name: '刀尾', points: [-1, -2, -3, -4, -5, -6, -7, -8] }
+            ].forEach((section) => {
+                let previous = center;
+                section.points.forEach((point) => {
+                    const current = valueAt(readings, point);
+                    if (current === null) return;
+
+                    if (current + 3 < previous) {
+                        hints.push(`${label}${section.name} ${point > 0 ? '+' : ''}${point} 读数低于前一测点，建议复测是否量具角度或接触点偏了。`);
+                    }
+                    if (Math.abs(current - previous) > 18) {
+                        hints.push(`${label}${section.name} ${point > 0 ? '+' : ''}${point} 与前一测点跳变较大，建议复测该点并检查磨弧连续性。`);
+                    }
+                    previous = current;
+                });
+            });
+
+            return hints;
+        }
+
+        function analyzeLeftRightRocker(leftReadings, rightReadings) {
+            const hints = [];
+            for (let point = -8; point <= 8; point += 1) {
+                const left = valueAt(leftReadings, point);
+                const right = valueAt(rightReadings, point);
+                if (left === null || right === null) continue;
+
+                if (Math.abs(left - right) >= 8) {
+                    hints.push(`左右脚 ${point > 0 ? '+' : ''}${point} 点相差 ${Math.abs(left - right)} ticks，建议复核左右脚弧度一致性。`);
+                }
+            }
+            return hints;
+        }
+
+        function analyzeOffsetValues(offsets) {
+            const hints = [];
+            const leftFront = parseGaugeNumber(offsets.leftFront);
+            const leftRear = parseGaugeNumber(offsets.leftRear);
+            const rightFront = parseGaugeNumber(offsets.rightFront);
+            const rightRear = parseGaugeNumber(offsets.rightRear);
+
+            if (leftFront !== null && leftRear !== null && Math.abs(leftFront - leftRear) >= 2) {
+                hints.push(`左脚前后 Offset 相差 ${Math.abs(leftFront - leftRear)}mm，建议检查刀架是否存在前后扭斜。`);
+            }
+            if (rightFront !== null && rightRear !== null && Math.abs(rightFront - rightRear) >= 2) {
+                hints.push(`右脚前后 Offset 相差 ${Math.abs(rightFront - rightRear)}mm，建议检查刀架是否存在前后扭斜。`);
+            }
+            if (leftFront !== null && rightFront !== null && Math.abs(leftFront - rightFront) >= 2) {
+                hints.push(`左右脚前点 Offset 相差 ${Math.abs(leftFront - rightFront)}mm，建议确认是否为刻意设定。`);
+            }
+            if (leftRear !== null && rightRear !== null && Math.abs(leftRear - rightRear) >= 2) {
+                hints.push(`左右脚后点 Offset 相差 ${Math.abs(leftRear - rightRear)}mm，建议确认是否为刻意设定。`);
+            }
+
+            return hints;
+        }
+
+        function analyzeBendValues(front, middle, rear) {
+            const hints = [];
+            const values = [
+                { label: '头段', value: parseGaugeNumber(front) },
+                { label: '中段', value: parseGaugeNumber(middle) },
+                { label: '后段', value: parseGaugeNumber(rear) }
+            ].filter((entry) => entry.value !== null);
+
+            if (values.length < 2) return hints;
+
+            const nums = values.map((entry) => entry.value);
+            const spread = Math.max(...nums) - Math.min(...nums);
+            if (spread >= 10) {
+                hints.push(`Bend 三段最大差为 ${spread} ticks，建议复核压弯是否过于集中在某一段。`);
+            }
+
+            return hints;
+        }
+
+        function buildEquipmentRuleHints({ leftReadings, rightReadings, offsets, bend }) {
+            const hints = [
+                ...analyzeRockerSide('左脚', leftReadings),
+                ...analyzeRockerSide('右脚', rightReadings),
+                ...analyzeLeftRightRocker(leftReadings, rightReadings),
+                ...analyzeOffsetValues(offsets),
+                ...analyzeBendValues(bend.front, bend.middle, bend.rear)
+            ];
+
+            return hints.length ? hints : ['当前已填数据未触发明显异常规则。建议保存本次记录，结合上冰反馈做调整前后对比。'];
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const analyzeEquipBtn = document.getElementById('analyzeEquipBtn');
+            const symptomTextEl = document.getElementById('equipSymptomText');
+            const symptomTemplates = {
+                slide: "弯道咬冰不足，弯中有向外侧滑的感觉。",
+                bootout: "入弯或弯中出现 Boot out / 鞋帮蹭冰。",
+                unstable: "直道稳定性差，滑行发飘或走直线困难。",
+                ankle: "弯道支撑脚踝压力大，训练后明显酸痛。",
+                release: "出弯推蹬释放不顺，尾段感觉拖住或甩不开。",
+                asymmetry: "左右脚感觉不一致，单侧更难咬冰或更容易跑偏。"
+            };
+            let selectedSymptomTemplate = 'slide';
+
+            document.querySelectorAll('.symptom-template-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    selectedSymptomTemplate = btn.dataset.symptomTemplate;
+                    symptomTextEl.value = symptomTemplates[selectedSymptomTemplate];
+                    document.querySelectorAll('.symptom-template-btn').forEach((otherBtn) => {
+                        otherBtn.classList.remove('border-skating-accent', 'text-skating-accent', 'bg-orange-500/10');
+                        otherBtn.classList.add('border-slate-700', 'text-slate-300', 'bg-slate-900');
+                    });
+                    btn.classList.remove('border-slate-700', 'text-slate-300', 'bg-slate-900');
+                    btn.classList.add('border-skating-accent', 'text-skating-accent', 'bg-orange-500/10');
+                });
+            });
+
             analyzeEquipBtn.addEventListener('click', () => {
-                const weight = parseFloat(document.getElementById('equipWeight').value) || 38;
-                const currentRocker = parseFloat(document.getElementById('equipRocker').value) || 9.0;
-                const symptomEl = document.getElementById('equipSymptom');
-                const symptomText = symptomEl.options[symptomEl.selectedIndex].text;
+                const weightRaw = document.getElementById('equipWeight').value.trim();
+                const heightRaw = document.getElementById('equipHeight').value.trim();
+                const weight = parseFloat(weightRaw);
+                const leftRockerReadings = collectRockerReadings('left');
+                const rightRockerReadings = collectRockerReadings('right');
+                const rockerSummary = `${summarizeRockerReadings('左脚', leftRockerReadings)}<br>${summarizeRockerReadings('右脚', rightRockerReadings)}`;
+                const bladeLength = document.getElementById('equipBladeLength').value.trim() || '未记录';
+                const offsetLeftFront = document.getElementById('equipOffsetLeftFront').value.trim() || '未记录';
+                const offsetLeftRear = document.getElementById('equipOffsetLeftRear').value.trim() || '未记录';
+                const offsetRightFront = document.getElementById('equipOffsetRightFront').value.trim() || '未记录';
+                const offsetRightRear = document.getElementById('equipOffsetRightRear').value.trim() || '未记录';
+                const offsetSummary = `左前 ${offsetLeftFront} / 左后 ${offsetLeftRear} / 右前 ${offsetRightFront} / 右后 ${offsetRightRear}`;
+                const bendFront = document.getElementById('equipBendFront').value.trim() || '未记录';
+                const bendMiddle = document.getElementById('equipBendMiddle').value.trim() || '未记录';
+                const bendRear = document.getElementById('equipBendRear').value.trim() || '未记录';
+                const bendSummary = `头段 ${bendFront} / 中段 ${bendMiddle} / 后段 ${bendRear}`;
+                const ruleHints = buildEquipmentRuleHints({
+                    leftReadings: leftRockerReadings,
+                    rightReadings: rightRockerReadings,
+                    offsets: {
+                        leftFront: offsetLeftFront,
+                        leftRear: offsetLeftRear,
+                        rightFront: offsetRightFront,
+                        rightRear: offsetRightRear
+                    },
+                    bend: {
+                        front: bendFront,
+                        middle: bendMiddle,
+                        rear: bendRear
+                    }
+                });
+                const ruleHintHtml = ruleHints
+                    .map((hint) => `<li>${hint}</li>`)
+                    .join('');
+                const disciplineText = '短道速滑';
+                const symptomText = symptomTextEl.value.trim() || '未记录具体反馈';
+                const symptomKey = selectedSymptomTemplate;
 
                 document.getElementById('equipEmptyState').classList.add('hidden');
                 document.getElementById('equipResults').classList.remove('hidden');
-
-                const baseRocker = 7.0 + (weight * 0.04);
-                const idealMin = (baseRocker - 0.3).toFixed(1);
-                const idealMax = (baseRocker + 0.3).toFixed(1);
-
-                const isEquipmentBlame = currentRocker > parseFloat(idealMax) + 0.5;
 
                 const titleEl = document.getElementById('equipReportTitle');
                 const badgeEl = document.getElementById('equipStatusBadge');
@@ -1242,38 +2101,68 @@
                 const act2Val = document.getElementById('equipAction2Value');
                 const act2Desc = document.getElementById('equipAction2Desc');
 
-                if (isEquipmentBlame) {
-                    titleEl.innerHTML = `冰刀弧度超负荷 (体重抗阻上限超标)`;
-                    titleEl.className = "text-red-400 font-extrabold";
-                    
-                    badgeEl.className = "px-3 py-1.5 rounded-lg flex items-center gap-2 border bg-red-500/10 border-red-500/30 text-red-400 text-xs font-bold";
-                    badgeEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 器材硬性不匹配`;
+                const missingCore = !weightRaw || (!leftRockerReadings.length && !rightRockerReadings.length);
+                const symptomAdvice = {
+                    slide: {
+                        focus: "咬冰/弯道抓地复核",
+                        rocker: "先检查刃口锋利度、左右脚 Radius/Rocker 表盘曲线是否一致，中心附近是否平顺，再讨论弧度是否需要微调。",
+                        offset: "复核刀架横向位置和 bend 是否支持弯道内刃建立；同时用录像确认身体倾角和入弯路线。"
+                    },
+                    bootout: {
+                        focus: "Boot Out / 鞋帮蹭冰复核",
+                        rocker: "记录蹭冰发生在入弯、弯中还是出弯；先检查刀管高度、鞋底外侧磨损和实际倾角。",
+                        offset: "可让磨刀师评估 offset 是否给了足够避让空间，但不要一次移动过大。"
+                    },
+                    unstable: {
+                        focus: "直道稳定性复核",
+                        rocker: "检查左右脚 Radius/Rocker 曲线是否不一致、中心点附近是否异常、接触点是否过度靠前/靠后，并确认刀是否装正。",
+                        offset: "优先复核刀架前后点是否在鞋底中心线附近，再结合视频看是否是踝控或髋控问题。"
+                    },
+                    ankle: {
+                        focus: "脚踝负荷与支撑复核",
+                        rocker: "检查鞋帮支撑、鞋带压力、鞋垫和刃口状态；脚踝酸痛不应直接归因于弧度。",
+                        offset: "复核偏置和 bend 是否让踝关节长期代偿，同时降低训练强度观察疼痛变化。"
+                    },
+                    release: {
+                        focus: "出弯释放与尾段复核",
+                        rocker: "检查刀尾侧 Radius/Rocker 读数是否递增平顺，尾段是否过度拖住推蹬释放。",
+                        offset: "复核后段 Bend、后跟 Offset 和出弯路线；避免同时调整尾段弧度与后跟偏置。"
+                    },
+                    asymmetry: {
+                        focus: "左右脚一致性复核",
+                        rocker: "对比左右脚 0、±1、±2、±3 与刀头/刀尾读数曲线，找出哪一侧偏离更明显。",
+                        offset: "复核左右脚 Offset 四点和 Bend 三段是否对称，再结合录像确认是否为技术侧偏。"
+                    }
+                };
+                const advice = symptomAdvice[symptomKey] || symptomAdvice.slide;
 
-                    descEl.innerHTML = `&gt; <span class="text-red-400">BIOMECHANICS WARNING</span>:<br>
-                    经测算，Lindsay 目前体重仅有 <strong>${weight}kg</strong>。滑行过弯时身体压弯产生的向心力，在 <strong>${currentRocker}m</strong> 的平直大平底冰刀下<strong>无法让刀刃有效契入冰面</strong>。这导致在做【${symptomText}】时产生偏轴滑移。属于典型的“器材不匹配”。`;
+                titleEl.innerHTML = advice.focus;
+                titleEl.className = missingCore ? "text-yellow-400 font-extrabold" : "text-skating-accent font-extrabold";
 
-                    act1Val.innerHTML = `重磨至 <span class="text-red-400 font-black">${idealMax}m</span>`;
-                    act1Desc.innerHTML = `<strong>推荐调校：</strong> 选手在 ${weight}kg 阶段推荐弧度区间为 ${idealMin}m 到 ${idealMax}m。建议立即前往装备室重新磨小（变弯）冰刀弧度。`;
+                badgeEl.className = missingCore
+                    ? "px-3 py-1.5 rounded-lg flex items-center gap-2 border bg-yellow-500/10 border-yellow-500/30 text-yellow-400 text-xs font-bold"
+                    : "px-3 py-1.5 rounded-lg flex items-center gap-2 border bg-orange-500/10 border-orange-500/30 text-skating-accent text-xs font-bold";
+                badgeEl.innerHTML = missingCore
+                    ? `<i class="fa-solid fa-circle-info"></i> 记录不完整`
+                    : `<i class="fa-solid fa-clipboard-check"></i> 可提交教练复核`;
 
-                    act2Val.innerHTML = `左移偏置 <span class="text-slate-400 font-black">暂不调整</span>`;
-                    act2Desc.innerHTML = `<strong>推荐调校：</strong> 基础力学中，弧度优先级高于偏置（Offset）。磨刀后请前往实验室验证姿态。`;
+                descEl.innerHTML = `&gt; <span class="text-skating-accent">EQUIPMENT LOG</span>:<br>
+                    项目：<strong>${disciplineText}</strong>；症状：<strong>${symptomText}</strong><br>
+                    身高：<strong>${heightRaw || '未记录'}cm</strong>；体重：<strong>${weightRaw || '未记录'}kg</strong>；刀长：<strong>${bladeLength}</strong><br>
+                    Radius/Rocker：<br><strong>${rockerSummary}</strong><br>
+                    Offset：<strong>${offsetSummary}</strong>；Bend：<strong>${bendSummary}</strong><br>
+                    <span class="text-slate-400">结论：</span>当前信息适合生成<strong>复核清单</strong>，不直接判定器材是否错误。建议结合低速测试、录像和磨刀师测量后再调整。<br>
+                    <span class="text-slate-400">规则提示：</span><ul class="list-disc pl-5 mt-1 space-y-1">${ruleHintHtml}</ul>
+                    <button onclick="switchTab('biomechanics')" class="mt-3 bg-skating-pro hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded font-bold transition-all"><i class="fa-solid fa-microscope mr-1"></i>前往生物力学实验室复查姿态</button>`;
 
-                } else {
-                    titleEl.innerHTML = `偏置 (Offset) 设定过于保守`;
-                    titleEl.className = "text-skating-accent font-extrabold";
+                act1Val.innerHTML = missingCore ? `补全曲线/体重` : `左右脚曲线待复核`;
+                act1Desc.innerHTML = `<strong>复核建议：</strong> ${advice.rocker} 重点查看 0、±1、±2、±3 附近是否平顺，以及刀头/刀尾读数是否按预期递增。记录调整前后的滑行反馈，避免一次性大幅重磨。`;
 
-                    badgeEl.className = "px-3 py-1.5 rounded-lg flex items-center gap-2 border bg-orange-500/10 border-orange-500/30 text-skating-accent text-xs font-bold";
-                    badgeEl.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> 细节微调状态`;
+                act2Val.innerHTML = `Offset + Bend 三段`;
+                act2Desc.innerHTML = `<strong>复核建议：</strong> ${advice.offset} 复核左前/左后/右前/右后四个 Offset 点是否对称，前后点是否出现意外扭斜；同时复核 Bend 头段/中段/后段是否符合入弯、弯中支撑和出弯释放需求。每次只调整一个变量，并用同一组低速直道、低速弯道和500m分段数据对比。`;
 
-                    descEl.innerHTML = `&gt; <span class="text-skating-accent">MECHANICAL FEEDBACK</span>:<br>
-                    Lindsay 的当前刀体弧度为 <strong>${currentRocker}m</strong>，完美契合她 <strong>${weight}kg</strong> 的体重发力要求 (该体重最佳黄金弧度区间为 ${idealMin}m - ${idealMax}m)。出现【${symptomText}】的原因<strong>不是器材硬体问题，极有可能是弯道下压倾角信心不足或刀刃安装角度问题</strong>。<br>
-                    <button onclick="switchTab('biomechanics')" class="mt-3 bg-skating-pro hover:bg-purple-600 text-white text-xs px-3 py-1.5 rounded font-bold transition-all"><i class="fa-solid fa-microscope mr-1"></i>一键前往生物力学实验室，录像复查倾斜角</button>`;
-
-                    act1Val.innerHTML = `维持现状 <span class="text-skating-success font-black">${currentRocker}m</span>`;
-                    act1Desc.innerHTML = `<strong>推荐调校：</strong> 冰刀圆弧度无需更改。该参数极其标准。`;
-
-                    act2Val.innerHTML = `向左平移 <span class="text-skating-accent font-black">2mm</span>`;
-                    act2Desc.innerHTML = `<strong>推荐调校：</strong> 建议在脚尖与脚跟位置，将刀架刀管整体往左侧移动 2mm。以此增大过弯极限倾斜下的蹭冰避让空间，防止蹭鞋底外侧滑跌倒。`;
+                if (missingCore) {
+                    descEl.innerHTML += `<br><span class="text-yellow-400">提示：</span>体重或 Radius/Rocker 曲线为空时，只能生成通用检查清单。补全左右脚测量点后更方便做历史记录对比。`;
                 }
             });
         });
