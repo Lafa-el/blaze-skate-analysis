@@ -166,54 +166,235 @@
             color: var(--app-text);
             border-color: #8b5cf6;
         }
+        .app-header {
+            display: flex !important;
+        }
+        .tab-scroll-shell {
+            position: relative;
+            width: 100%;
+            max-width: 1400px;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgb(51 65 85);
+        }
+        .tab-scroll-btn {
+            position: absolute;
+            top: 0.15rem;
+            z-index: 20;
+            display: none;
+            width: 2.25rem;
+            height: 2.25rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            border: 1px solid var(--app-border);
+            background: color-mix(in srgb, var(--app-surface) 90%, transparent);
+            color: var(--app-muted-strong);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+        }
+        .tab-scroll-btn.is-visible {
+            display: flex;
+        }
+        .tab-scroll-btn.left-0 {
+            left: 0;
+        }
+        .tab-scroll-btn.right-0 {
+            right: 0;
+        }
+        .tab-scroll-edge {
+            position: absolute;
+            top: 0;
+            bottom: 1px;
+            z-index: 10;
+            width: 3.25rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.18s ease;
+        }
+        .tab-scroll-edge.left-edge {
+            left: 0;
+            background: linear-gradient(90deg, var(--app-bg), transparent);
+        }
+        .tab-scroll-edge.right-edge {
+            right: 0;
+            background: linear-gradient(270deg, var(--app-bg), transparent);
+        }
+        .tab-scroll-shell.can-scroll-left .left-edge,
+        .tab-scroll-shell.can-scroll-right .right-edge {
+            opacity: 1;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 1rem;
+            }
+            .app-header {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) auto;
+                align-items: start;
+                gap: 0.85rem;
+                margin-bottom: 1.1rem;
+            }
+            .brand-block {
+                min-width: 0;
+                align-items: center;
+            }
+            .brand-logo {
+                width: 2.75rem;
+                height: 2.75rem;
+                border-radius: 0.85rem;
+            }
+            .brand-title {
+                font-size: 1rem;
+                line-height: 1.05;
+                white-space: nowrap;
+                letter-spacing: 0;
+            }
+            .brand-subtitle {
+                max-width: 13.5rem;
+                font-size: 0.62rem;
+                line-height: 1.15;
+                white-space: normal;
+                overflow-wrap: normal;
+            }
+            .header-actions {
+                min-width: 0;
+                justify-content: flex-end;
+                gap: 0.45rem;
+            }
+            .theme-toggle-btn {
+                width: 2.35rem;
+                height: 2.35rem;
+                padding: 0;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            #themeToggleText {
+                display: none;
+            }
+            .athlete-card {
+                min-width: 0;
+                max-width: min(48vw, 18rem);
+                gap: 0.55rem;
+                padding: 0.45rem 0.65rem;
+                border-radius: 1.4rem;
+            }
+            .athlete-avatar {
+                width: 2rem;
+                height: 2rem;
+            }
+            .athlete-info {
+                min-width: 0;
+            }
+            .athlete-name-line,
+            .athlete-points-line {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .athlete-name-line {
+                font-size: 0.76rem;
+            }
+            .athlete-points-line {
+                font-size: 0.68rem;
+            }
+            #lindsayAgeBadge {
+                display: inline;
+            }
+            .tab-scroll-shell {
+                margin-bottom: 1.25rem;
+            }
+            .tab-scroll-track {
+                gap: 1rem;
+                padding-left: 2.5rem;
+                padding-right: 2.5rem;
+                scroll-snap-type: x proximity;
+            }
+            .tab-scroll-track > button {
+                scroll-snap-align: start;
+                font-size: 0.86rem;
+                padding-bottom: 0.75rem;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .app-header {
+                grid-template-columns: 1fr;
+            }
+            .header-actions {
+                width: 100%;
+                min-width: 0;
+                justify-content: space-between;
+            }
+            .athlete-card {
+                flex: 1;
+                max-width: none;
+            }
+            .brand-title {
+                font-size: 0.98rem;
+            }
+            .brand-subtitle {
+                max-width: none;
+                font-size: 0.58rem;
+            }
+        }
     </style>
 </head>
 
 <body class="min-h-screen flex flex-col items-center p-4 sm:p-8">
 
     <!-- 顶部导航栏 / 个人信息 -->
-    <header class="w-full max-w-[1400px] flex justify-between items-center mb-6">
-        <div class="flex items-center gap-3">
-            <img src="/assets/blaze-skate-lab-icon.svg" alt="BLAZE SKATE LAB logo" class="w-11 h-11 rounded-xl pro-glow flex-shrink-0">
+    <header class="app-header w-full max-w-[1400px] flex justify-between items-center mb-6">
+        <div class="brand-block flex items-center gap-3">
+            <img src="/assets/blaze-skate-lab-icon.svg" alt="BLAZE SKATE LAB logo" class="brand-logo w-11 h-11 rounded-xl pro-glow flex-shrink-0">
             <div>
                 <!-- 全面品牌化升级 -->
-                <h1 class="font-bold text-xl tracking-wide">BLAZE SKATE LAB</h1>
-                <p class="text-xs text-slate-400 font-mono text-skating-success">SPEED SKATING ANALYTICS SYSTEM</p>
+                <h1 class="brand-title font-bold text-xl tracking-wide">BLAZE SKATE LAB</h1>
+                <p class="brand-subtitle text-xs text-slate-400 font-mono text-skating-success">SPEED SKATING ANALYTICS SYSTEM</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="header-actions flex items-center gap-3">
             <button id="themeToggleBtn" type="button" class="theme-toggle-btn rounded-full px-3 py-2 text-xs font-bold flex items-center gap-2 transition-all active:scale-95">
                 <i id="themeToggleIcon" class="fa-solid fa-circle-half-stroke"></i>
                 <span id="themeToggleText">自动</span>
             </button>
             <!-- 🌟 升级：绑定 Lindsay 的真实云端数据 -->
-            <div class="flex items-center gap-4 bg-skating-card py-2 px-4 rounded-full border border-slate-700">
-                <div class="w-8 h-8 rounded-full bg-slate-600 overflow-hidden border border-slate-500 relative">
+            <div class="athlete-card flex items-center gap-4 bg-skating-card py-2 px-4 rounded-full border border-slate-700">
+                <div class="athlete-avatar w-8 h-8 rounded-full bg-slate-600 overflow-hidden border border-slate-500 relative flex-shrink-0">
                     <div class="absolute inset-0 bg-purple-500/20 animate-pulse"></div>
                     <img src="https://placehold.co/100x100/1e293b/a855f7?text=Lin" alt="Lindsay Avatar" class="w-full h-full object-cover">
                 </div>
-                <div class="text-sm">
-                    <p class="font-semibold text-white">Lindsay <span class="text-xs text-slate-400 font-normal ml-1" id="lindsayAgeBadge">冰龄计算中</span></p>
-                    <p class="text-xs text-skating-accent font-medium"><i class="fa-solid fa-star mr-1"></i><span id="globalPoints">0</span> 积分</p>
+                <div class="athlete-info text-sm">
+                    <p class="athlete-name-line font-semibold text-white">Lindsay <span class="text-xs text-slate-400 font-normal ml-1" id="lindsayAgeBadge">冰龄计算中</span></p>
+                    <p class="athlete-points-line text-xs text-skating-accent font-medium"><i class="fa-solid fa-star mr-1"></i><span id="globalPoints">0</span> 积分</p>
                 </div>
             </div>
         </div>
     </header>
 
     <!-- 模块切换 Tabs (宽度对齐 1400px) -->
-    <div class="w-full max-w-[1400px] mb-6 border-b border-slate-700 flex gap-6 px-2 overflow-x-auto no-scrollbar">
-        <button onclick="switchTab('biomechanics')" id="btn-biomechanics" class="pb-3 text-sm font-bold text-skating-pro border-b-2 border-skating-pro transition-colors flex items-center gap-2 whitespace-nowrap">
-            <i class="fa-solid fa-microscope"></i> 生物力学实验室 (本地AI版)
-            <span class="text-[10px] bg-skating-success text-white px-1.5 py-0.5 rounded uppercase font-black tracking-wider">LIVE</span>
+    <div id="tabScrollShell" class="tab-scroll-shell">
+        <div id="tabLeftEdge" class="tab-scroll-edge left-edge"></div>
+        <button id="tabScrollLeft" type="button" class="tab-scroll-btn left-0" aria-label="向左查看更多模块">
+            <i class="fa-solid fa-chevron-left"></i>
         </button>
-        <button onclick="switchTab('pacing')" id="btn-pacing" class="pb-3 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors whitespace-nowrap">
-            <i class="fa-solid fa-stopwatch mr-1"></i> 智能配速优化 (乳酸衰减分析)
-        </button>
-        <button onclick="switchTab('planning')" id="btn-planning" class="pb-3 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors flex items-center gap-2 whitespace-nowrap">
-            <i class="fa-solid fa-calendar-week"></i> 阶段训练规划 (自适应课表)
-        </button>
-        <button onclick="switchTab('equipment')" id="btn-equipment" class="pb-3 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors flex items-center gap-2 whitespace-nowrap">
-            <i class="fa-solid fa-screwdriver-wrench"></i> 器材智能调校 (底盘诊断)
+        <div id="tabScrollTrack" class="tab-scroll-track flex gap-6 px-2 overflow-x-auto no-scrollbar">
+            <button onclick="switchTab('biomechanics')" id="btn-biomechanics" class="pb-3 text-sm font-bold text-skating-pro border-b-2 border-skating-pro transition-colors flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-microscope"></i> 生物力学实验室 (本地AI版)
+                <span class="text-[10px] bg-skating-success text-white px-1.5 py-0.5 rounded uppercase font-black tracking-wider">LIVE</span>
+            </button>
+            <button onclick="switchTab('pacing')" id="btn-pacing" class="pb-3 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors whitespace-nowrap">
+                <i class="fa-solid fa-stopwatch mr-1"></i> 智能配速优化 (乳酸衰减分析)
+            </button>
+            <button onclick="switchTab('planning')" id="btn-planning" class="pb-3 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-calendar-week"></i> 阶段训练规划 (自适应课表)
+            </button>
+            <button onclick="switchTab('equipment')" id="btn-equipment" class="pb-3 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-screwdriver-wrench"></i> 器材智能调校 (底盘诊断)
+            </button>
+        </div>
+        <div id="tabRightEdge" class="tab-scroll-edge right-edge"></div>
+        <button id="tabScrollRight" type="button" class="tab-scroll-btn right-0" aria-label="向右查看更多模块">
+            <i class="fa-solid fa-chevron-right"></i>
         </button>
     </div>
 
@@ -921,6 +1102,45 @@
             applyThemeMode(nextMode);
         }
 
+        function updateTabScrollHints() {
+            const shell = document.getElementById('tabScrollShell');
+            const track = document.getElementById('tabScrollTrack');
+            const leftBtn = document.getElementById('tabScrollLeft');
+            const rightBtn = document.getElementById('tabScrollRight');
+            if (!shell || !track || !leftBtn || !rightBtn) return;
+
+            const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
+            const canScroll = maxScrollLeft > 4;
+            const canScrollLeft = canScroll && track.scrollLeft > 12;
+            const canScrollRight = canScroll && track.scrollLeft < maxScrollLeft - 12;
+
+            shell.classList.toggle('can-scroll-left', canScrollLeft);
+            shell.classList.toggle('can-scroll-right', canScrollRight);
+            leftBtn.classList.toggle('is-visible', canScrollLeft);
+            rightBtn.classList.toggle('is-visible', canScrollRight);
+        }
+
+        function scrollTabs(direction) {
+            const track = document.getElementById('tabScrollTrack');
+            if (!track) return;
+            const amount = Math.max(220, Math.round(track.clientWidth * 0.72));
+            track.scrollBy({ left: direction * amount, behavior: 'smooth' });
+            window.setTimeout(updateTabScrollHints, 260);
+        }
+
+        function initTabScroller() {
+            const track = document.getElementById('tabScrollTrack');
+            const leftBtn = document.getElementById('tabScrollLeft');
+            const rightBtn = document.getElementById('tabScrollRight');
+            if (!track || !leftBtn || !rightBtn) return;
+
+            track.addEventListener('scroll', updateTabScrollHints, { passive: true });
+            leftBtn.addEventListener('click', () => scrollTabs(-1));
+            rightBtn.addEventListener('click', () => scrollTabs(1));
+            window.addEventListener('resize', updateTabScrollHints);
+            updateTabScrollHints();
+        }
+
         // 2. 完美的 Tab 切换逻辑
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -939,6 +1159,8 @@
                 if(tabId === 'planning') activeBtn.className = "pb-3 text-sm font-bold text-skating-pro border-b-2 border-skating-pro transition-colors flex items-center gap-2 whitespace-nowrap";
                 if(tabId === 'equipment') activeBtn.className = "pb-3 text-sm font-bold text-skating-accent border-b-2 border-skating-accent transition-colors whitespace-nowrap";
             }
+            activeBtn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            window.setTimeout(updateTabScrollHints, 260);
         }
 
         // 跨模块自适应联动
@@ -1127,6 +1349,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateSkatingAgeBadge();
             applyThemeMode();
+            initTabScroller();
             const themeToggleBtn = document.getElementById('themeToggleBtn');
             if (themeToggleBtn) themeToggleBtn.addEventListener('click', cycleThemeMode);
         });
