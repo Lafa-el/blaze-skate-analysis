@@ -557,7 +557,7 @@
                              <div class="absolute right-0 top-0 w-16 h-full bg-gradient-to-l from-skating-success/10 to-transparent"></div>
                              <p class="text-[10px] text-slate-400 mb-1 font-bold">支撑腿膝盖屈曲 (Knee)</p>
                              <p class="text-3xl font-black text-white" id="liveKneeAngle">--°</p>
-                             <p class="text-[10px] text-slate-500 mt-1 font-mono">按运动员本体左右识别</p>
+                             <p class="text-[10px] text-slate-500 mt-1 font-mono" id="supportLegHint">评分制识别支撑腿</p>
                          </div>
                          <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700 relative overflow-hidden">
                              <div class="absolute right-0 top-0 w-16 h-full bg-gradient-to-l from-yellow-500/10 to-transparent"></div>
@@ -1089,27 +1089,106 @@
             return Math.round(angle);
         }
 
-        function pickSupportLeg(leftLeg, rightLeg, bodyCenterX = null) {
-            const referenceX = bodyCenterX ?? ((leftLeg.hip.x + rightLeg.hip.x) / 2);
-            const visibilityScore = (leg) => [leg.hip, leg.knee, leg.ankle]
-                .reduce((sum, point) => sum + (point.visibility ?? 1), 0) / 3;
-            const supportScore = (leg) => {
-                const ankleUnderHip = 1 - Math.min(1, Math.abs(leg.ankle.x - referenceX) / 0.28);
-                const kneeUnderHip = 1 - Math.min(1, Math.abs(leg.knee.x - referenceX) / 0.32);
-                const compactLeg = 1 - Math.min(1, Math.abs(leg.ankle.x - leg.hip.x) / 0.38);
-                const visible = visibilityScore(leg);
-                return ankleUnderHip * 0.45 + kneeUnderHip * 0.25 + compactLeg * 0.2 + visible * 0.1;
-            };
-            const leftScore = supportScore(leftLeg);
-            const rightScore = supportScore(rightLeg);
+        window.supportLegTracker = {
+            stableSide: null,
+            candidateSide: null,
+            candidateFrames: 0
+        };
 
-            if (Math.abs(leftScore - rightScore) > 0.08) {
-                return leftScore > rightScore ? { side: '运动员左腿', ...leftLeg } : { side: '运动员右腿', ...rightLeg };
+        function scoreSupportLeg(leg, otherLeg, referenceX, previousSide, sideKey) {
+            const visibility = [leg.hip, leg.knee, leg.ankle]
+                .reduce((sum, point) => sum + (point.visibility ?? 1), 0) / 3;
+            const angle = calculateAngle(leg.hip, leg.knee, leg.ankle);
+            const ankleProjection = 1 - Math.min(1, Math.abs(leg.ankle.x - referenceX) / 0.3);
+            const kneeProjection = 1 - Math.min(1, Math.abs(leg.knee.x - referenceX) / 0.34);
+            const compactLeg = 1 - Math.min(1, Math.abs(leg.ankle.x - leg.hip.x) / 0.42);
+            const lowerThanOther = leg.ankle.y >= otherLeg.ankle.y ? 1 : Math.max(0, 1 - (otherLeg.ankle.y - leg.ankle.y) / 0.1);
+            const kneeBelowHip = leg.knee.y > leg.hip.y ? 1 : 0.3;
+            const ankleBelowKnee = leg.ankle.y > leg.knee.y ? 1 : 0.35;
+            const angleSupport = angle >= 65 && angle <= 135
+                ? 1 - Math.min(1, Math.abs(angle - 100) / 55)
+                : 0.12;
+            const continuity = previousSide === sideKey ? 0.08 : 0;
+            const veryLowVisibilityPenalty = visibility < 0.48 ? -0.35 : 0;
+
+            const score =
+                ankleProjection * 0.24 +
+                kneeProjection * 0.16 +
+                compactLeg * 0.14 +
+                lowerThanOther * 0.14 +
+                angleSupport * 0.18 +
+                visibility * 0.1 +
+                kneeBelowHip * 0.03 +
+                ankleBelowKnee * 0.03 +
+                continuity +
+                veryLowVisibilityPenalty;
+
+            return {
+                score,
+                angle,
+                visibility,
+                components: { ankleProjection, kneeProjection, compactLeg, lowerThanOther, angleSupport }
+            };
+        }
+
+        function pickSupportLeg(leftLeg, rightLeg, bodyCenterX = null) {
+            const tracker = window.supportLegTracker || { stableSide: null, candidateSide: null, candidateFrames: 0 };
+            const referenceX = bodyCenterX ?? ((leftLeg.hip.x + rightLeg.hip.x) / 2);
+            const left = scoreSupportLeg(leftLeg, rightLeg, referenceX, tracker.stableSide, 'left');
+            const right = scoreSupportLeg(rightLeg, leftLeg, referenceX, tracker.stableSide, 'right');
+            const preferredSide = left.score >= right.score ? 'left' : 'right';
+            const preferredScore = Math.max(left.score, right.score);
+            const otherScore = Math.min(left.score, right.score);
+            const margin = preferredScore - otherScore;
+            const isReadable = preferredScore >= 0.48 && margin >= 0.035;
+            const switchFramesNeeded = margin > 0.18 ? 2 : 4;
+
+            if (!isReadable) {
+                return {
+                    side: tracker.stableSide === 'right' ? '运动员右腿' : tracker.stableSide === 'left' ? '运动员左腿' : '支撑腿不确定',
+                    sideKey: tracker.stableSide,
+                    confidence: Math.max(0, Math.min(99, Math.round(preferredScore * 78 + margin * 135))),
+                    readable: false,
+                    reason: '支撑腿候选得分接近或关键点可信度不足',
+                    leftScore: left.score,
+                    rightScore: right.score,
+                    ...(tracker.stableSide === 'right' ? rightLeg : tracker.stableSide === 'left' ? leftLeg : left.score >= right.score ? leftLeg : rightLeg)
+                };
             }
 
-            const leftAngle = calculateAngle(leftLeg.hip, leftLeg.knee, leftLeg.ankle);
-            const rightAngle = calculateAngle(rightLeg.hip, rightLeg.knee, rightLeg.ankle);
-            return leftAngle <= rightAngle ? { side: '运动员左腿', ...leftLeg } : { side: '运动员右腿', ...rightLeg };
+            if (preferredSide !== tracker.stableSide) {
+                if (tracker.candidateSide === preferredSide) {
+                    tracker.candidateFrames += 1;
+                } else {
+                    tracker.candidateSide = preferredSide;
+                    tracker.candidateFrames = 1;
+                }
+                if (!tracker.stableSide || tracker.candidateFrames >= switchFramesNeeded) {
+                    tracker.stableSide = preferredSide;
+                    tracker.candidateSide = null;
+                    tracker.candidateFrames = 0;
+                }
+            } else {
+                tracker.candidateSide = null;
+                tracker.candidateFrames = 0;
+            }
+
+            window.supportLegTracker = tracker;
+            const stableSide = tracker.stableSide || preferredSide;
+            const stableLeg = stableSide === 'left' ? leftLeg : rightLeg;
+            const stableScore = stableSide === 'left' ? left.score : right.score;
+            const confidence = Math.max(0, Math.min(99, Math.round(stableScore * 78 + margin * 135)));
+
+            return {
+                side: stableSide === 'left' ? '运动员左腿' : '运动员右腿',
+                sideKey: stableSide,
+                confidence,
+                readable: confidence >= 52,
+                reason: confidence < 52 ? '支撑腿置信度偏低' : '',
+                leftScore: left.score,
+                rightScore: right.score,
+                ...stableLeg
+            };
         }
 
         function formatTime(seconds) {
@@ -1263,6 +1342,7 @@
             lastTargetCom = null;
             poseJumpRejectCount = 0;
             manualTargetWarmupFrames = 0;
+            window.supportLegTracker = { stableSide: null, candidateSide: null, candidateFrames: 0 };
             latestPoseMetrics = null;
             pendingKeyframeCapture = false;
             keyframeSamples = [];
@@ -1277,6 +1357,7 @@
             document.getElementById('bioResults').classList.add('hidden');
             document.getElementById('bioEmptyState').classList.remove('hidden');
             document.getElementById('liveKneeAngle').innerText = "--°";
+            document.getElementById('supportLegHint').innerText = "评分制识别支撑腿";
             document.getElementById('liveLeanAngle').innerText = "--°";
             document.getElementById('livePelvisHeight').innerText = "--%";
             document.getElementById('liveRecoverySpeed').innerText = "--";
@@ -1698,6 +1779,34 @@
             }
         }
 
+        function drawSupportLegHighlight(canvasCtx, canvasElement, supportLeg) {
+            if (!supportLeg?.readable || !supportLeg.hip || !supportLeg.knee || !supportLeg.ankle) return;
+            const points = [supportLeg.hip, supportLeg.knee, supportLeg.ankle];
+            canvasCtx.save();
+            canvasCtx.lineCap = 'round';
+            canvasCtx.lineJoin = 'round';
+            canvasCtx.strokeStyle = '#22c55e';
+            canvasCtx.lineWidth = 7;
+            canvasCtx.shadowColor = 'rgba(34, 197, 94, 0.55)';
+            canvasCtx.shadowBlur = 10;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(points[0].x * canvasElement.width, points[0].y * canvasElement.height);
+            canvasCtx.lineTo(points[1].x * canvasElement.width, points[1].y * canvasElement.height);
+            canvasCtx.lineTo(points[2].x * canvasElement.width, points[2].y * canvasElement.height);
+            canvasCtx.stroke();
+            canvasCtx.shadowBlur = 0;
+            points.forEach((point) => {
+                canvasCtx.beginPath();
+                canvasCtx.arc(point.x * canvasElement.width, point.y * canvasElement.height, 6, 0, Math.PI * 2);
+                canvasCtx.fillStyle = '#22c55e';
+                canvasCtx.fill();
+                canvasCtx.strokeStyle = '#ffffff';
+                canvasCtx.lineWidth = 2;
+                canvasCtx.stroke();
+            });
+            canvasCtx.restore();
+        }
+
         function getPoseCom(landmarks) {
             const lShoulder = landmarks[11], rShoulder = landmarks[12];
             const lHip = landmarks[23], rHip = landmarks[24];
@@ -2007,14 +2116,27 @@
                         hipMidX
                     );
                     const kneeFlexionAngle = calculateAngle(supportLeg.hip, supportLeg.knee, supportLeg.ankle);
-                    document.getElementById('liveKneeAngle').innerText = kneeFlexionAngle + "°";
+                    const supportReadable = supportLeg.readable && supportLeg.confidence >= 52;
+                    const kneeAngleEl = document.getElementById('liveKneeAngle');
+                    const supportHintEl = document.getElementById('supportLegHint');
+                    drawSupportLegHighlight(canvasCtx, canvasElement, supportLeg);
 
-                    if (kneeFlexionAngle > 115) {
-                        document.getElementById('liveKneeAngle').className = "text-3xl font-black text-red-400";
+                    if (!supportReadable) {
+                        kneeAngleEl.innerText = "--°";
+                        kneeAngleEl.className = "text-3xl font-black text-yellow-400";
+                        supportHintEl.innerText = `${supportLeg.reason || '支撑腿不确定'} · 置信度 ${supportLeg.confidence}%`;
+                    } else if (kneeFlexionAngle > 115) {
+                        kneeAngleEl.innerText = kneeFlexionAngle + "°";
+                        kneeAngleEl.className = "text-3xl font-black text-red-400";
+                        supportHintEl.innerText = `${supportLeg.side} · 置信度 ${supportLeg.confidence}%`;
                     } else if (kneeFlexionAngle >= 100 && kneeFlexionAngle <= 110) {
-                        document.getElementById('liveKneeAngle').className = "text-3xl font-black text-skating-success";
+                        kneeAngleEl.innerText = kneeFlexionAngle + "°";
+                        kneeAngleEl.className = "text-3xl font-black text-skating-success";
+                        supportHintEl.innerText = `${supportLeg.side} · 置信度 ${supportLeg.confidence}%`;
                     } else {
-                        document.getElementById('liveKneeAngle').className = "text-3xl font-black text-white";
+                        kneeAngleEl.innerText = kneeFlexionAngle + "°";
+                        kneeAngleEl.className = "text-3xl font-black text-white";
+                        supportHintEl.innerText = `${supportLeg.side} · 置信度 ${supportLeg.confidence}%`;
                     }
 
                     let leanRadians = Math.atan2(hipMidY - shoulderMidY, hipMidX - shoulderMidX);
@@ -2049,16 +2171,20 @@
 
                     const peakSpeed = Math.max(speedL, speedR);
                     document.getElementById('liveRecoverySpeed').innerText = peakSpeed;
-                    latestPoseMetrics = {
+                    latestPoseMetrics = supportReadable ? {
                         time: formatTime(document.getElementById('inputVideo').currentTime),
                         leanAngle,
                         kneeAngle: kneeFlexionAngle,
                         pelvisHeight: Number(pelvisHeightPct),
                         recoverySpeed: peakSpeed,
-                        supportSide: supportLeg.side
-                    };
+                        supportSide: `${supportLeg.side} (${supportLeg.confidence}%)`
+                    } : null;
                     if (pendingKeyframeCapture) {
-                        captureReadableKeyframe(latestPoseMetrics);
+                        if (latestPoseMetrics) {
+                            captureReadableKeyframe(latestPoseMetrics);
+                        } else {
+                            captureUnreadableKeyframe(supportLeg.reason || "支撑腿不确定，当前帧不可判读。");
+                        }
                     }
 
                     const rawCom = {
@@ -2093,9 +2219,12 @@
                         ? `<span class="text-skating-success">[ 电子地平线完美校准 - 数据已锁定 ]</span>`
                         : `<span class="text-skating-accent">[ 倾角纠正中 (Roll: ${tiltCorrectionAngle}°) ]</span>`;
 
-                    if (kneeFlexionAngle > 115) {
+                    if (!supportReadable) {
                         consoleOutput.innerHTML = `> ${alignmentNote}<br>
-                        > <span class="text-red-400"> Warning</span>: ${supportLeg.side}支撑膝弯曲不足 ${kneeFlexionAngle}°。直道蹬冰受限！<br>
+                        > <span class="text-yellow-400"> Support</span>: ${supportLeg.reason || '支撑腿不确定'}，当前帧不输出膝角。建议暂停在更清晰的支撑瞬间采样。`;
+                    } else if (kneeFlexionAngle > 115) {
+                        consoleOutput.innerHTML = `> ${alignmentNote}<br>
+                        > <span class="text-red-400"> Warning</span>: ${supportLeg.side}支撑膝弯曲不足 ${kneeFlexionAngle}°（置信度 ${supportLeg.confidence}%）。直道蹬冰受限！<br>
                         <button onclick="goToPlanningAndLoad('bounce')" class="mt-2 bg-skating-accent hover:bg-orange-600 text-white text-[10px] px-2.5 py-1 rounded font-bold transition-all"><i class="fa-solid fa-calendar-plus mr-1"></i>一键应用[直道骨盆稳定]专项课表</button>`;
                     } else if (leanAngle > 52) {
                         consoleOutput.innerHTML = `> ${alignmentNote}<br>
@@ -2112,6 +2241,7 @@
                     }
                     bioPoseSendInFlight = false;
                     document.getElementById('liveKneeAngle').innerText = "--°";
+                    document.getElementById('supportLegHint').innerText = "当前帧无稳定支撑腿";
                     document.getElementById('liveLeanAngle').innerText = "--°";
                     document.getElementById('livePelvisHeight').innerText = "--%";
                     document.getElementById('liveRecoverySpeed').innerText = "--";
