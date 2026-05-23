@@ -514,20 +514,17 @@
 
                     <!-- 播放器控制栏 -->
                     <div class="mt-4 bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <button id="bioPlayPauseBtn" class="bg-skating-pro hover:bg-purple-600 text-white font-bold py-2 px-5 rounded-lg flex items-center gap-2 text-sm transition-all active:scale-95">
-                                    <i class="fa-solid fa-pause" id="playPauseIcon"></i> <span id="playPauseText">暂停</span>
-                                </button>
-                                <button id="captureKeyframeBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 text-xs transition-all active:scale-95">
-                                    <i class="fa-solid fa-camera"></i> 采样当前帧
-                                </button>
-                                <button id="clearKeyframesBtn" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-lg flex items-center gap-2 text-xs transition-all active:scale-95">
-                                    <i class="fa-solid fa-trash-can"></i> 清空
-                                </button>
-                            </div>
-                            
-                            <div class="flex items-center gap-2 text-xs">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button id="bioPlayPauseBtn" class="bg-skating-pro hover:bg-purple-600 text-white font-bold py-2 px-5 rounded-lg flex items-center gap-2 text-sm transition-all active:scale-95">
+                                <i class="fa-solid fa-pause" id="playPauseIcon"></i> <span id="playPauseText">暂停</span>
+                            </button>
+                            <button id="captureKeyframeBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 text-xs transition-all active:scale-95">
+                                <i class="fa-solid fa-camera"></i> 采样当前帧
+                            </button>
+                            <button id="clearKeyframesBtn" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-lg flex items-center gap-2 text-xs transition-all active:scale-95">
+                                <i class="fa-solid fa-trash-can"></i> 清空
+                            </button>
+                            <div class="flex items-center gap-2 text-xs ml-0 sm:ml-auto">
                                 <span class="text-slate-400"><i class="fa-solid fa-gauge-high mr-1"></i>视频分析速度:</span>
                                 <select id="playbackSpeed" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono focus:outline-none focus:border-skating-pro">
                                     <option value="1">1.0x (原速)</option>
@@ -536,6 +533,17 @@
                                     <option value="0.1">0.1x (逐帧级精细解析)</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="flex flex-col lg:flex-row lg:items-center gap-2 bg-slate-900/70 border border-slate-700 rounded-xl p-3">
+                            <div class="flex items-center gap-1 bg-slate-950 border border-slate-700 rounded-lg p-1 flex-shrink-0">
+                                <span class="px-2 text-[10px] text-slate-500 font-bold whitespace-nowrap">支撑腿</span>
+                                <button type="button" data-support-override="auto" class="support-override-btn bg-skating-pro text-white text-[10px] font-bold rounded px-2.5 py-1.5">自动</button>
+                                <button type="button" data-support-override="left" class="support-override-btn text-slate-400 hover:text-white text-[10px] font-bold rounded px-2.5 py-1.5">左腿</button>
+                                <button type="button" data-support-override="right" class="support-override-btn text-slate-400 hover:text-white text-[10px] font-bold rounded px-2.5 py-1.5">右腿</button>
+                            </div>
+                            <p class="text-[11px] text-slate-400 leading-relaxed whitespace-nowrap overflow-x-auto no-scrollbar">
+                                使用逻辑：自动=系统评分识别；左腿/右腿只影响下一次“采样当前帧”的 Knee 计算，实时播放仍使用自动识别。
+                            </p>
                         </div>
                         
                         <div class="flex items-center gap-3 pt-1">
@@ -1191,6 +1199,50 @@
             };
         }
 
+        function setSupportOverrideMode(mode = 'auto') {
+            window.manualSupportOverride = ['auto', 'left', 'right'].includes(mode) ? mode : 'auto';
+            document.querySelectorAll('.support-override-btn').forEach((btn) => {
+                const active = btn.dataset.supportOverride === window.manualSupportOverride;
+                btn.classList.toggle('bg-skating-pro', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('text-slate-400', !active);
+            });
+            const hint = document.getElementById('supportLegHint');
+            if (hint && window.manualSupportOverride !== 'auto') {
+                hint.innerText = `关键帧手动指定：运动员${window.manualSupportOverride === 'left' ? '左腿' : '右腿'}`;
+            }
+        }
+
+        function getManualSupportOverride() {
+            return window.manualSupportOverride || 'auto';
+        }
+
+        function buildManualSupportLeg(sideKey, leftLeg, rightLeg) {
+            const leg = sideKey === 'left' ? leftLeg : rightLeg;
+            const visibility = [leg.hip, leg.knee, leg.ankle]
+                .reduce((sum, point) => sum + (point.visibility ?? 1), 0) / 3;
+            if (visibility < 0.35) {
+                return {
+                    ...leg,
+                    side: sideKey === 'left' ? '运动员左腿' : '运动员右腿',
+                    sideKey,
+                    confidence: Math.round(visibility * 100),
+                    readable: false,
+                    manual: true,
+                    reason: '手动指定腿的关键点可信度不足'
+                };
+            }
+            return {
+                ...leg,
+                side: sideKey === 'left' ? '运动员左腿' : '运动员右腿',
+                sideKey,
+                confidence: 100,
+                readable: true,
+                manual: true,
+                reason: ''
+            };
+        }
+
         function formatTime(seconds) {
             if (isNaN(seconds)) return "00:00";
             const mins = Math.floor(seconds / 60);
@@ -1358,6 +1410,7 @@
             document.getElementById('bioEmptyState').classList.remove('hidden');
             document.getElementById('liveKneeAngle').innerText = "--°";
             document.getElementById('supportLegHint').innerText = "评分制识别支撑腿";
+            setSupportOverrideMode('auto');
             document.getElementById('liveLeanAngle').innerText = "--°";
             document.getElementById('livePelvisHeight').innerText = "--%";
             document.getElementById('liveRecoverySpeed').innerText = "--";
@@ -2021,6 +2074,10 @@
             pendingKeyframeCapture = true;
             latestPoseMetrics = null;
             document.getElementById('cvStatusText').innerText = "STATUS: KEYFRAME SAMPLING";
+            const overrideMode = getManualSupportOverride();
+            if (overrideMode !== 'auto') {
+                document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-emerald-400">Keyframe</span>: 本次采样将使用手动指定的运动员${overrideMode === 'left' ? '左腿' : '右腿'}作为支撑腿。`;
+            }
             if (!isModelReady || !poseModel) {
                 document.getElementById('aiFeedbackTextCV').innerHTML = `> <span class="text-yellow-400">Keyframe</span>: 模型仍在初始化，请稍后再采样当前帧。`;
                 pendingKeyframeCapture = false;
@@ -2110,11 +2167,13 @@
                     const hipMidX = (lHip.x + rHip.x) / 2;
                     const hipMidY = (lHip.y + rHip.y) / 2;
 
-                    const supportLeg = pickSupportLeg(
-                        { hip: lHip, knee: lKnee, ankle: lAnkle },
-                        { hip: rHip, knee: rKnee, ankle: rAnkle },
-                        hipMidX
-                    );
+                    const leftLegData = { hip: lHip, knee: lKnee, ankle: lAnkle };
+                    const rightLegData = { hip: rHip, knee: rKnee, ankle: rAnkle };
+                    let supportLeg = pickSupportLeg(leftLegData, rightLegData, hipMidX);
+                    const manualOverride = pendingKeyframeCapture ? getManualSupportOverride() : 'auto';
+                    if (manualOverride !== 'auto') {
+                        supportLeg = buildManualSupportLeg(manualOverride, leftLegData, rightLegData);
+                    }
                     const kneeFlexionAngle = calculateAngle(supportLeg.hip, supportLeg.knee, supportLeg.ankle);
                     const supportReadable = supportLeg.readable && supportLeg.confidence >= 52;
                     const kneeAngleEl = document.getElementById('liveKneeAngle');
@@ -2128,15 +2187,15 @@
                     } else if (kneeFlexionAngle > 115) {
                         kneeAngleEl.innerText = kneeFlexionAngle + "°";
                         kneeAngleEl.className = "text-3xl font-black text-red-400";
-                        supportHintEl.innerText = `${supportLeg.side} · 置信度 ${supportLeg.confidence}%`;
+                        supportHintEl.innerText = `${supportLeg.side}${supportLeg.manual ? ' · 手动关键帧' : ''} · 置信度 ${supportLeg.confidence}%`;
                     } else if (kneeFlexionAngle >= 100 && kneeFlexionAngle <= 110) {
                         kneeAngleEl.innerText = kneeFlexionAngle + "°";
                         kneeAngleEl.className = "text-3xl font-black text-skating-success";
-                        supportHintEl.innerText = `${supportLeg.side} · 置信度 ${supportLeg.confidence}%`;
+                        supportHintEl.innerText = `${supportLeg.side}${supportLeg.manual ? ' · 手动关键帧' : ''} · 置信度 ${supportLeg.confidence}%`;
                     } else {
                         kneeAngleEl.innerText = kneeFlexionAngle + "°";
                         kneeAngleEl.className = "text-3xl font-black text-white";
-                        supportHintEl.innerText = `${supportLeg.side} · 置信度 ${supportLeg.confidence}%`;
+                        supportHintEl.innerText = `${supportLeg.side}${supportLeg.manual ? ' · 手动关键帧' : ''} · 置信度 ${supportLeg.confidence}%`;
                     }
 
                     let leanRadians = Math.atan2(hipMidY - shoulderMidY, hipMidX - shoulderMidX);
@@ -2177,7 +2236,7 @@
                         kneeAngle: kneeFlexionAngle,
                         pelvisHeight: Number(pelvisHeightPct),
                         recoverySpeed: peakSpeed,
-                        supportSide: `${supportLeg.side} (${supportLeg.confidence}%)`
+                        supportSide: `${supportLeg.side}${supportLeg.manual ? ' 手动' : ''} (${supportLeg.confidence}%)`
                     } : null;
                     if (pendingKeyframeCapture) {
                         if (latestPoseMetrics) {
@@ -2354,6 +2413,10 @@
             const videoViewport = document.getElementById('videoViewport');
 
             renderKeyframeSamples();
+            setSupportOverrideMode('auto');
+            document.querySelectorAll('.support-override-btn').forEach((btn) => {
+                btn.addEventListener('click', () => setSupportOverrideMode(btn.dataset.supportOverride));
+            });
             uploadZone.addEventListener('click', () => videoUpload.click());
 
             captureKeyframeBtn.addEventListener('click', () => requestKeyframeCapture(videoElement));
