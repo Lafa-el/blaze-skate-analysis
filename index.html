@@ -118,8 +118,47 @@
         :root[data-theme="light"] .bg-skating-card\/50,
         :root[data-theme="light"] .bg-slate-900,
         :root[data-theme="light"] .bg-slate-900\/70,
+        :root[data-theme="light"] .bg-slate-950,
         :root[data-theme="light"] .bg-slate-950\/80 {
             background-color: var(--app-panel) !important;
+        }
+        :root[data-theme="light"] .athlete-avatar {
+            background-color: #ffffff !important;
+            border-color: #cbdcea !important;
+            box-shadow: 0 8px 18px rgba(99, 102, 241, 0.12);
+        }
+        :root[data-theme="light"] .bio-file-icon {
+            background: linear-gradient(135deg, #eef2ff, #ecfeff) !important;
+            color: #7c3aed !important;
+            border: 1px solid #cbdcea;
+        }
+        :root[data-theme="light"] .bio-controls-panel {
+            background-color: rgba(255, 255, 255, 0.86) !important;
+            border-color: var(--app-border) !important;
+        }
+        :root[data-theme="light"] .support-override-panel {
+            background-color: #f8fcff !important;
+            border-color: var(--app-border) !important;
+        }
+        :root[data-theme="light"] .support-override-group {
+            background-color: #ffffff !important;
+            border-color: #cbdcea !important;
+        }
+        :root[data-theme="light"] .support-override-btn:not(.bg-skating-pro) {
+            color: #64748b !important;
+        }
+        :root[data-theme="light"] #clearKeyframesBtn {
+            background-color: #ffffff !important;
+            border-color: #cbdcea !important;
+            color: #334155 !important;
+        }
+        :root[data-theme="light"] #clearKeyframesBtn:hover {
+            background-color: #f1f5f9 !important;
+        }
+        :root[data-theme="light"] #playbackSpeed {
+            background-color: #ffffff !important;
+            border-color: #cbdcea !important;
+            color: #0f172a !important;
         }
         :root[data-theme="light"] .border-slate-700,
         :root[data-theme="light"] .border-slate-700\/50,
@@ -361,7 +400,7 @@
             <div class="athlete-card flex items-center gap-4 bg-skating-card py-2 px-4 rounded-full border border-slate-700">
                 <div class="athlete-avatar w-8 h-8 rounded-full bg-slate-600 overflow-hidden border border-slate-500 relative flex-shrink-0">
                     <div class="absolute inset-0 bg-purple-500/20 animate-pulse"></div>
-                    <img src="https://placehold.co/100x100/1e293b/a855f7?text=Lin" alt="Lindsay Avatar" class="w-full h-full object-cover">
+                    <img src="https://placehold.co/100x100/f8fafc/7c3aed?text=Lin" alt="Lindsay Avatar" class="w-full h-full object-cover">
                 </div>
                 <div class="athlete-info text-sm">
                     <p class="athlete-name-line font-semibold text-white">Lindsay <span class="text-xs text-slate-400 font-normal ml-1" id="lindsayAgeBadge">冰龄计算中</span></p>
@@ -424,7 +463,7 @@
                 
                 <div id="fileSelected" class="hidden bg-slate-800 rounded-xl p-4 border border-slate-600 flex justify-between items-center min-h-[80px]">
                     <div class="flex items-center gap-3 w-full overflow-hidden">
-                        <div class="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-skating-pro flex-shrink-0">
+                        <div class="bio-file-icon w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-skating-pro flex-shrink-0">
                             <i class="fa-solid fa-file-video text-lg"></i>
                         </div>
                         <div class="truncate">
@@ -513,7 +552,7 @@
                     </div>
 
                     <!-- 播放器控制栏 -->
-                    <div class="mt-4 bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
+                    <div class="bio-controls-panel mt-4 bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col gap-3">
                         <div class="flex flex-wrap items-center gap-2">
                             <button id="bioPlayPauseBtn" class="bg-skating-pro hover:bg-purple-600 text-white font-bold py-2 px-5 rounded-lg flex items-center gap-2 text-sm transition-all active:scale-95">
                                 <i class="fa-solid fa-pause" id="playPauseIcon"></i> <span id="playPauseText">暂停</span>
@@ -534,8 +573,8 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="flex flex-col lg:flex-row lg:items-center gap-2 bg-slate-900/70 border border-slate-700 rounded-xl p-3">
-                            <div class="flex items-center gap-1 bg-slate-950 border border-slate-700 rounded-lg p-1 flex-shrink-0">
+                        <div class="support-override-panel flex flex-col lg:flex-row lg:items-center gap-2 bg-slate-900/70 border border-slate-700 rounded-xl p-3">
+                            <div class="support-override-group flex items-center gap-1 bg-slate-950 border border-slate-700 rounded-lg p-1 flex-shrink-0">
                                 <span class="px-2 text-[10px] text-slate-500 font-bold whitespace-nowrap">支撑腿</span>
                                 <button type="button" data-support-override="auto" class="support-override-btn bg-skating-pro text-white text-[10px] font-bold rounded px-2.5 py-1.5">自动</button>
                                 <button type="button" data-support-override="left" class="support-override-btn text-slate-400 hover:text-white text-[10px] font-bold rounded px-2.5 py-1.5">左腿</button>
