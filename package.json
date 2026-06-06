@@ -5,5 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/generate-firebase-config.mjs"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2"
   }
 }

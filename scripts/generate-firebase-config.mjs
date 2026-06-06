@@ -1,4 +1,7 @@
+import dotenv from "dotenv";
 import { writeFileSync } from "node:fs";
+
+dotenv.config({ path: ".env.local" });
 
 const required = [
   "VITE_FIREBASE_API_KEY",
