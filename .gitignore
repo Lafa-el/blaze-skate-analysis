@@ -1,6 +1,7 @@
 firebase-config.js
 .vercel
 node_modules
+dist
 .env
 .env.local
 .env.*
