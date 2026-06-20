@@ -208,6 +208,18 @@
         .app-header {
             display: flex !important;
         }
+        body[data-analysis-route="active"] > header,
+        body[data-analysis-route="active"] > .tab-scroll-shell,
+        body[data-analysis-route="active"] > div:not(#analysis-v1-root) {
+            display: none !important;
+        }
+        #analysis-v1-root {
+            display: none;
+            width: 100%;
+        }
+        body[data-analysis-route="active"] #analysis-v1-root {
+            display: block;
+        }
         .tab-scroll-shell {
             position: relative;
             width: 100%;
@@ -380,6 +392,8 @@
 </head>
 
 <body class="min-h-screen flex flex-col items-center p-4 sm:p-8">
+
+    <div id="analysis-v1-root"></div>
 
     <!-- 顶部导航栏 / 个人信息 -->
     <header class="app-header w-full max-w-[1400px] flex justify-between items-center mb-6">
@@ -1649,12 +1663,17 @@
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, runTransaction, increment, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        const analysisV1RoutePattern = /^\/(?:$|sessions(?:\/|$)|videos(?:\/|$)|settings(?:\/|$))/;
+        const isAnalysisV1Route = analysisV1RoutePattern.test(window.location.pathname);
+
         // Firebase 动态容灾载入：Vercel 构建会生成 window.__BLAZE_FIREBASE_CONFIG__
         let firebaseConfig;
         try {
-            firebaseConfig = typeof __firebase_config !== 'undefined'
-                ? JSON.parse(__firebase_config)
-                : window.__BLAZE_FIREBASE_CONFIG__;
+            firebaseConfig = isAnalysisV1Route
+                ? null
+                : typeof __firebase_config !== 'undefined'
+                    ? JSON.parse(__firebase_config)
+                    : window.__BLAZE_FIREBASE_CONFIG__;
         } catch (e) {
             firebaseConfig = null;
         }
@@ -1663,7 +1682,9 @@
         if (!firebaseConfig || !firebaseConfig.apiKey || !firebaseConfig.projectId) {
             document.getElementById('fbSyncIndicator').innerText = "● 未配置";
             document.getElementById('fbSyncIndicator').className = "text-amber-400 font-bold";
-            console.warn("Firebase config missing. Set Vercel environment variables before deploying.");
+            if (!isAnalysisV1Route) {
+                console.warn("Firebase config missing. Set Vercel environment variables before deploying.");
+            }
         } else {
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
@@ -3657,5 +3678,6 @@
             });
         });
     </script>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
