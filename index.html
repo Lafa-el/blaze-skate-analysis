@@ -1090,6 +1090,50 @@
         window.currentActiveFocus = '';
         window.lindsayBirthDate = '2015-01-14';
 
+        const SKATINGX_SOURCE_APP = "blaze-skate-analysis";
+        const SKATINGX_PROFILE_SCHEMA_VERSION = "skatingx-athlete-v1";
+        const SKATINGX_ANALYSIS_SCHEMA_VERSION = "skatingx-analysis-v1";
+        const SKATINGX_EQUIPMENT_SCHEMA_VERSION = "skatingx-equipment-v1";
+        const SKATINGX_TASK_SCHEMA_VERSION = "skatingx-training-task-v1";
+
+        window.SKATINGX_SOURCE_APP = SKATINGX_SOURCE_APP;
+        window.SKATINGX_PROFILE_SCHEMA_VERSION = SKATINGX_PROFILE_SCHEMA_VERSION;
+        window.SKATINGX_ANALYSIS_SCHEMA_VERSION = SKATINGX_ANALYSIS_SCHEMA_VERSION;
+        window.SKATINGX_EQUIPMENT_SCHEMA_VERSION = SKATINGX_EQUIPMENT_SCHEMA_VERSION;
+        window.SKATINGX_TASK_SCHEMA_VERSION = SKATINGX_TASK_SCHEMA_VERSION;
+        window.currentFirebaseUserId = null;
+
+        function requireUid(uid, functionName) {
+            if (!uid) {
+                throw new Error(`${functionName} requires a Firebase uid before writing SkatingX-owned data.`);
+            }
+            return uid;
+        }
+
+        function createSkatingXMetadata(uid, schemaVersion) {
+            const ownerUid = requireUid(uid, 'createSkatingXMetadata');
+            const now = new Date().toISOString();
+            return {
+                ownerUserId: ownerUid,
+                athleteId: ownerUid,
+                sourceApp: SKATINGX_SOURCE_APP,
+                schemaVersion,
+                createdAt: now,
+                updatedAt: now
+            };
+        }
+
+        function updateSkatingXMetadata(uid, schemaVersion) {
+            const ownerUid = requireUid(uid, 'updateSkatingXMetadata');
+            return {
+                ownerUserId: ownerUid,
+                athleteId: ownerUid,
+                sourceApp: SKATINGX_SOURCE_APP,
+                schemaVersion,
+                updatedAt: new Date().toISOString()
+            };
+        }
+
         function calculateSkatingAge(birthDateString, referenceDate = new Date()) {
             const birthYear = new Date(`${birthDateString}T00:00:00`).getFullYear();
             const seasonYear = referenceDate.getMonth() >= 6
@@ -1584,6 +1628,9 @@
         window.updateSkatingAgeBadge = updateSkatingAgeBadge;
         window.applyThemeMode = applyThemeMode;
         window.cycleThemeMode = cycleThemeMode;
+        window.requireUid = requireUid;
+        window.createSkatingXMetadata = createSkatingXMetadata;
+        window.updateSkatingXMetadata = updateSkatingXMetadata;
 
         document.addEventListener('DOMContentLoaded', () => {
             updateSkatingAgeBadge();
@@ -1641,6 +1688,7 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
+                    window.currentFirebaseUserId = userId;
                     document.getElementById('fbSyncIndicator').innerText = "● 已连接";
                     document.getElementById('fbSyncIndicator').className = "text-skating-success font-bold animate-pulse";
 
@@ -1653,10 +1701,13 @@
                         const profileSnap = await getDoc(lindsayProfileDocRef);
                         if (!profileSnap.exists()) {
                             await setDoc(lindsayProfileDocRef, {
+                                ...window.createSkatingXMetadata(userId, window.SKATINGX_PROFILE_SCHEMA_VERSION),
                                 name: "Lindsay",
                                 birthDate: window.lindsayBirthDate,
                                 points: window.globalPointsVal || 0,
-                                lastActive: new Date().toISOString()
+                                createdAt: serverTimestamp(),
+                                lastActive: serverTimestamp(),
+                                updatedAt: serverTimestamp()
                             });
                         }
                     } catch (e) {
@@ -1693,8 +1744,12 @@
                     const equipmentRecordsCol = collection(db, 'artifacts', appId, 'users', userId, 'equipmentRecords');
                     window.blazeEquipmentCloud = {
                         saveRecord: async (record) => {
+                            const createdAt = record.createdAt || new Date().toISOString();
                             await addDoc(equipmentRecordsCol, {
                                 ...record,
+                                ...window.updateSkatingXMetadata(userId, window.SKATINGX_EQUIPMENT_SCHEMA_VERSION),
+                                createdAt,
+                                updatedAt: serverTimestamp(),
                                 savedAt: serverTimestamp()
                             });
                         },
@@ -1736,13 +1791,18 @@
                                 transaction.set(taskDocRef, {
                                     taskId: taskId,
                                     points: points,
-                                    completedAt: serverTimestamp()
+                                    ...window.updateSkatingXMetadata(userId, window.SKATINGX_TASK_SCHEMA_VERSION),
+                                    completedAt: serverTimestamp(),
+                                    createdAt: serverTimestamp(),
+                                    updatedAt: serverTimestamp()
                                 });
 
                                 if (lindsayProfileDocRef) {
                                     transaction.update(lindsayProfileDocRef, {
+                                        ...window.updateSkatingXMetadata(userId, window.SKATINGX_PROFILE_SCHEMA_VERSION),
                                         points: increment(points),
-                                        lastActive: new Date().toISOString()
+                                        lastActive: serverTimestamp(),
+                                        updatedAt: serverTimestamp()
                                     });
                                 }
                             });
@@ -1793,6 +1853,8 @@
         let keyframeSamples = [];
         const MAX_KEYFRAME_SAMPLES = 10;
         window.bioAnalysisStarted = false;
+        // SkatingX Sprint 1 privacy boundary: video files stay browser-local only.
+        // Object URLs are temporary playback handles, not durable references, and no video bytes are uploaded to Firestore or Storage.
         window.currentBioVideoUrl = null;
 
         function resizeCanvas() {
@@ -3104,6 +3166,35 @@
         let equipmentHistoryRecords = [];
         let currentEquipmentRecord = null;
 
+        function createLocalEquipmentMetadata() {
+            const uid = window.currentFirebaseUserId;
+            const now = new Date().toISOString();
+            const metadata = {
+                sourceApp: window.SKATINGX_SOURCE_APP,
+                schemaVersion: window.SKATINGX_EQUIPMENT_SCHEMA_VERSION,
+                createdAt: now,
+                updatedAt: now,
+                localOnly: true
+            };
+            if (uid) {
+                metadata.ownerUserId = uid;
+                metadata.athleteId = uid;
+            }
+            return metadata;
+        }
+
+        function prepareLocalEquipmentRecord(record) {
+            const metadata = createLocalEquipmentMetadata();
+            const createdAt = record.createdAt || metadata.createdAt;
+            return normalizeEquipmentRecord({
+                ...record,
+                ...metadata,
+                createdAt,
+                updatedAt: metadata.updatedAt,
+                localOnly: true
+            });
+        }
+
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, (char) => ({
                 '&': '&amp;',
@@ -3353,7 +3444,7 @@
                     saved = true;
                     if (statusEl) statusEl.textContent = '已保存到云端器材档案。';
                 } else {
-                    setEquipmentHistory([recordToSave, ...equipmentHistoryRecords], 'local');
+                    setEquipmentHistory([prepareLocalEquipmentRecord(recordToSave), ...equipmentHistoryRecords], 'local');
                     saveLocalEquipmentHistory(equipmentHistoryRecords);
                     saved = true;
                     if (statusEl) statusEl.textContent = 'Firebase 未连接，已保存到本机浏览器档案。';
@@ -3361,7 +3452,7 @@
                 if (saved) setSaveEquipmentButtonState('saved');
             } catch (error) {
                 console.error('Equipment save failed:', error);
-                setEquipmentHistory([recordToSave, ...equipmentHistoryRecords], 'local');
+                setEquipmentHistory([prepareLocalEquipmentRecord(recordToSave), ...equipmentHistoryRecords], 'local');
                 saveLocalEquipmentHistory(equipmentHistoryRecords);
                 setSaveEquipmentButtonState('saved');
                 if (statusEl) statusEl.textContent = '云端保存失败，已先保存到本机浏览器档案。';
