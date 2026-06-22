@@ -12,6 +12,12 @@ import {
   VideoLibraryPage,
   type PageRenderContext,
 } from "../pages/analysis";
+import { initializeBiomechanicsMvp } from "../pages/analysis/biomechanicsMvp";
+import { initializeDashboardMvp } from "../pages/analysis/dashboardMvp";
+import { initializeEquipmentMvp } from "../pages/analysis/equipmentMvp";
+import { initializePaceMvp } from "../pages/analysis/paceMvp";
+import { initializeReportMvp } from "../pages/analysis/reportMvp";
+import { initializeAnalysisSessionMvp } from "../pages/analysis/sessionMvp";
 
 type AnalysisPage = (context: PageRenderContext) => string;
 
@@ -23,6 +29,7 @@ interface RouteMatch {
 const SESSION_DETAIL_PATTERN = /^\/sessions\/([^/]+)$/;
 const SESSION_CHILD_PATTERN = /^\/sessions\/([^/]+)\/(biomechanics|pace|equipment|report)$/;
 const VIDEO_DETAIL_PATTERN = /^\/videos\/([^/]+)$/;
+const ANALYSIS_BASE_PATH = "/analysis";
 
 export function mountAnalysisRouter(): void {
   const root = document.getElementById("analysis-v1-root");
@@ -31,10 +38,28 @@ export function mountAnalysisRouter(): void {
     return;
   }
 
+  const navigate = (path: string) => {
+    window.history.pushState(null, "", path);
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const render = () => {
-    const match = matchRoute(window.location.pathname);
+    if (!isAnalysisRoute(window.location.pathname)) {
+      root.innerHTML = "";
+      delete document.body.dataset.analysisRoute;
+      return;
+    }
+
+    const match = matchRoute(stripAnalysisPrefix(window.location.pathname));
     root.innerHTML = renderAnalysisApp(match);
     document.body.dataset.analysisRoute = "active";
+    initializeDashboardMvp(root, match.context);
+    initializeAnalysisSessionMvp(root, match.context, navigate);
+    initializeBiomechanicsMvp(root, match.context);
+    initializePaceMvp(root, match.context);
+    initializeEquipmentMvp(root, match.context);
+    initializeReportMvp(root, match.context);
   };
 
   document.addEventListener("click", (event) => {
@@ -45,9 +70,7 @@ export function mountAnalysisRouter(): void {
     }
 
     event.preventDefault();
-    window.history.pushState(null, "", target.pathname);
-    render();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    navigate(target.pathname);
   });
 
   window.addEventListener("popstate", render);
@@ -56,15 +79,15 @@ export function mountAnalysisRouter(): void {
 
 function matchRoute(path: string): RouteMatch {
   if (path === "/") {
-    return { page: AnalysisDashboardPage, context: { path } };
+    return { page: AnalysisDashboardPage, context: { path: withAnalysisPrefix(path) } };
   }
 
   if (path === "/sessions") {
-    return { page: AnalysisSessionsPage, context: { path } };
+    return { page: AnalysisSessionsPage, context: { path: withAnalysisPrefix(path) } };
   }
 
   if (path === "/sessions/new") {
-    return { page: NewAnalysisSessionPage, context: { path } };
+    return { page: NewAnalysisSessionPage, context: { path: withAnalysisPrefix(path) } };
   }
 
   const sessionChildMatch = path.match(SESSION_CHILD_PATTERN);
@@ -80,7 +103,7 @@ function matchRoute(path: string): RouteMatch {
 
     return {
       page: pageByTab[tab as keyof typeof pageByTab],
-      context: { path, sessionId },
+      context: { path: withAnalysisPrefix(path), sessionId },
     };
   }
 
@@ -90,12 +113,12 @@ function matchRoute(path: string): RouteMatch {
 
     return {
       page: AnalysisSessionDetailPage,
-      context: { path, sessionId },
+      context: { path: withAnalysisPrefix(path), sessionId },
     };
   }
 
   if (path === "/videos") {
-    return { page: VideoLibraryPage, context: { path } };
+    return { page: VideoLibraryPage, context: { path: withAnalysisPrefix(path) } };
   }
 
   const videoDetailMatch = path.match(VIDEO_DETAIL_PATTERN);
@@ -104,15 +127,31 @@ function matchRoute(path: string): RouteMatch {
 
     return {
       page: VideoDetailPage,
-      context: { path, videoId },
+      context: { path: withAnalysisPrefix(path), videoId },
     };
   }
 
   if (path === "/settings") {
-    return { page: AnalysisSettingsPage, context: { path } };
+    return { page: AnalysisSettingsPage, context: { path: withAnalysisPrefix(path) } };
   }
 
-  return { page: AnalysisDashboardPage, context: { path } };
+  return { page: AnalysisDashboardPage, context: { path: withAnalysisPrefix("/") } };
+}
+
+function isAnalysisRoute(path: string): boolean {
+  return path === ANALYSIS_BASE_PATH || path.startsWith(`${ANALYSIS_BASE_PATH}/`);
+}
+
+function stripAnalysisPrefix(path: string): string {
+  if (path === ANALYSIS_BASE_PATH) {
+    return "/";
+  }
+
+  return path.slice(ANALYSIS_BASE_PATH.length) || "/";
+}
+
+function withAnalysisPrefix(path: string): string {
+  return path === "/" ? ANALYSIS_BASE_PATH : `${ANALYSIS_BASE_PATH}${path}`;
 }
 
 function requireRouteParam(value: string | undefined, name: string): string {
@@ -125,17 +164,17 @@ function requireRouteParam(value: string | undefined, name: string): string {
 
 function renderAnalysisApp(match: RouteMatch): string {
   const navigation = [
-    { label: "Dashboard", href: "/", icon: "fa-gauge-high" },
-    { label: "Sessions", href: "/sessions", icon: "fa-layer-group" },
-    { label: "Videos", href: "/videos", icon: "fa-video" },
-    { label: "Settings", href: "/settings", icon: "fa-gear" },
+    { label: "Dashboard", href: "/analysis", icon: "fa-gauge-high" },
+    { label: "Sessions", href: "/analysis/sessions", icon: "fa-layer-group" },
+    { label: "Videos", href: "/analysis/videos", icon: "fa-video" },
+    { label: "Settings", href: "/analysis/settings", icon: "fa-gear" },
   ];
 
   return `
     <div class="w-full max-w-[1400px] space-y-6">
       <header class="bg-skating-card border border-slate-700 rounded-2xl p-4 sm:p-5 shadow-xl">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <a data-analysis-link href="/" class="flex items-center gap-3 group">
+          <a data-analysis-link href="/analysis" class="flex items-center gap-3 group">
             <div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-skating-pro group-hover:border-skating-pro transition-colors">
               <i class="fa-solid fa-fire-flame-curved"></i>
             </div>
@@ -147,7 +186,9 @@ function renderAnalysisApp(match: RouteMatch): string {
           <nav class="flex flex-wrap gap-2" aria-label="Analysis main navigation">
             ${navigation
               .map((item) => {
-                const isActive = item.href === "/" ? match.context.path === "/" : match.context.path.startsWith(item.href);
+                const isActive = item.href === ANALYSIS_BASE_PATH
+                  ? match.context.path === ANALYSIS_BASE_PATH
+                  : match.context.path.startsWith(item.href);
                 const classes = isActive
                   ? "bg-skating-pro text-white border-skating-pro"
                   : "bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border-slate-700";

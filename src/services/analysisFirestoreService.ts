@@ -1,10 +1,10 @@
 import {
   collection,
+  deleteField,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
-  limit,
   orderBy,
   query,
   serverTimestamp,
@@ -13,6 +13,7 @@ import {
   where,
   type CollectionReference,
   type DocumentData,
+  type FieldValue,
   type Firestore,
   type QueryConstraint,
 } from "firebase/firestore";
@@ -21,6 +22,7 @@ import { getBlazeFirestore } from "../firebase/firestore";
 import type {
   AnalysisReport,
   AnalysisSession,
+  AnalysisTimestamp,
   AnalysisVideo,
   BiomechanicsFinding,
   EquipmentSnapshot,
@@ -65,7 +67,7 @@ export type UpdatePaceSessionInput = Partial<
 export type CreateEquipmentSnapshotInput = Omit<EquipmentSnapshot, "id" | "createdAt" | "updatedAt">;
 export type UpdateEquipmentSnapshotInput = Partial<
   Omit<EquipmentSnapshot, "id" | "ownerUserId" | "sessionId" | "createdAt" | "updatedAt">
->;
+> & Record<string, unknown>;
 
 export type CreateAnalysisReportInput = Omit<AnalysisReport, "id" | "createdAt" | "updatedAt" | "generatedAt"> &
   Partial<Pick<AnalysisReport, "generatedAt">>;
@@ -93,6 +95,27 @@ function getUserCollection(
 
 function stripUndefined<T extends Record<string, unknown>>(value: T): Partial<T> {
   return Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)) as Partial<T>;
+}
+
+function getTimestampMs(value: AnalysisTimestamp | undefined): number {
+  if (!value) {
+    return 0;
+  }
+
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  return value.toDate().getTime();
 }
 
 async function createDocument<T extends { readonly id: string }>(
@@ -164,10 +187,7 @@ export function listAnalysisSessionsByAthlete(
   context: AnalysisFirestoreContext,
   athleteId: string,
 ): Promise<AnalysisSession[]> {
-  return listDocuments<AnalysisSession>(context, "analysisSessions", [
-    where("athleteId", "==", athleteId),
-    orderBy("createdAt", "desc"),
-  ]);
+  return listDocuments<AnalysisSession>(context, "analysisSessions", [where("athleteId", "==", athleteId)]);
 }
 
 export function updateAnalysisSession(
@@ -226,10 +246,7 @@ export function listFindingsBySession(
   context: AnalysisFirestoreContext,
   sessionId: string,
 ): Promise<BiomechanicsFinding[]> {
-  return listDocuments<BiomechanicsFinding>(context, "biomechanicsFindings", [
-    where("sessionId", "==", sessionId),
-    orderBy("createdAt", "asc"),
-  ]);
+  return listDocuments<BiomechanicsFinding>(context, "biomechanicsFindings", [where("sessionId", "==", sessionId)]);
 }
 
 export function updateBiomechanicsFinding(
@@ -252,10 +269,7 @@ export function createPaceSession(
 }
 
 export function listPaceSessionsBySession(context: AnalysisFirestoreContext, sessionId: string): Promise<PaceSession[]> {
-  return listDocuments<PaceSession>(context, "paceSessions", [
-    where("sessionId", "==", sessionId),
-    orderBy("createdAt", "asc"),
-  ]);
+  return listDocuments<PaceSession>(context, "paceSessions", [where("sessionId", "==", sessionId)]);
 }
 
 export function updatePaceSession(
@@ -281,13 +295,9 @@ export async function getEquipmentSnapshotBySession(
   context: AnalysisFirestoreContext,
   sessionId: string,
 ): Promise<EquipmentSnapshot | null> {
-  const snapshots = await listDocuments<EquipmentSnapshot>(context, "equipmentSnapshots", [
-    where("sessionId", "==", sessionId),
-    orderBy("createdAt", "desc"),
-    limit(1),
-  ]);
+  const snapshots = await listDocuments<EquipmentSnapshot>(context, "equipmentSnapshots", [where("sessionId", "==", sessionId)]);
 
-  return snapshots[0] ?? null;
+  return [...snapshots].sort((first, second) => getTimestampMs(second.createdAt) - getTimestampMs(first.createdAt))[0] ?? null;
 }
 
 export function updateEquipmentSnapshot(
@@ -296,6 +306,10 @@ export function updateEquipmentSnapshot(
   input: UpdateEquipmentSnapshotInput,
 ): Promise<void> {
   return updateDocument(context, "equipmentSnapshots", equipmentSnapshotId, input as Record<string, unknown>);
+}
+
+export function clearEquipmentSnapshotField(): FieldValue {
+  return deleteField();
 }
 
 export function createAnalysisReport(
@@ -312,13 +326,9 @@ export async function getAnalysisReportBySession(
   context: AnalysisFirestoreContext,
   sessionId: string,
 ): Promise<AnalysisReport | null> {
-  const reports = await listDocuments<AnalysisReport>(context, "analysisReports", [
-    where("sessionId", "==", sessionId),
-    orderBy("createdAt", "desc"),
-    limit(1),
-  ]);
+  const reports = await listDocuments<AnalysisReport>(context, "analysisReports", [where("sessionId", "==", sessionId)]);
 
-  return reports[0] ?? null;
+  return [...reports].sort((first, second) => getTimestampMs(second.createdAt) - getTimestampMs(first.createdAt))[0] ?? null;
 }
 
 export function updateAnalysisReport(

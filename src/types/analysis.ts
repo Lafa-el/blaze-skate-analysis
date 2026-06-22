@@ -82,6 +82,28 @@ export type EquipmentSnapshotStatus =
   | "superseded"
   | "archived";
 
+export type EquipmentConditionLevel =
+  | "none"
+  | "low"
+  | "medium"
+  | "high"
+  | "unknown";
+
+export type SharpeningStatus =
+  | "fresh"
+  | "good"
+  | "dull"
+  | "uneven"
+  | "unknown";
+
+export type IceCondition =
+  | "hard"
+  | "soft"
+  | "cut-up"
+  | "wet"
+  | "frosty"
+  | "unknown";
+
 export type AnalysisReportStatus =
   | "draft"
   | "generated"
@@ -101,6 +123,11 @@ export interface AnalysisAuditFields {
   readonly updatedAt: AnalysisTimestamp;
   readonly createdByUserId?: string;
   readonly updatedByUserId?: string;
+}
+
+export interface AnalysisTimeRange {
+  readonly startSeconds: number;
+  readonly endSeconds?: number;
 }
 
 export interface AnalysisSession extends AnalysisOwnership, AnalysisAuditFields {
@@ -148,10 +175,14 @@ export interface BiomechanicsFinding extends AnalysisOwnership, AnalysisAuditFie
   readonly sourceType: AnalysisSourceType;
   readonly title: string;
   readonly description: string;
+  readonly observation?: string;
+  readonly impact?: string;
   readonly frameTimeSeconds?: number;
+  readonly timeRange?: AnalysisTimeRange;
   readonly confidenceScore?: number;
   readonly measuredValues?: Readonly<Record<string, number | string | boolean>>;
   readonly recommendations: readonly string[];
+  readonly trendKey?: string;
 }
 
 export interface PaceMetrics {
@@ -177,12 +208,58 @@ export interface PaceSession extends AnalysisOwnership, AnalysisAuditFields {
   readonly notes?: string;
 }
 
+export interface EquipmentBootDetails {
+  readonly brand?: string;
+  readonly model?: string;
+  readonly size?: string;
+  readonly notes?: string;
+}
+
+export interface EquipmentBladeDetails {
+  readonly brand?: string;
+  readonly model?: string;
+  readonly lengthMm?: number;
+  readonly cup?: string;
+  readonly rocker?: string;
+  readonly bend?: string;
+  readonly notes?: string;
+}
+
+export interface EquipmentSharpeningDetails {
+  readonly status?: SharpeningStatus;
+  readonly sharpenedAt?: AnalysisTimestamp;
+  readonly notes?: string;
+}
+
+export interface EquipmentIceDetails {
+  readonly rink?: string;
+  readonly surface?: string;
+  readonly condition?: IceCondition;
+  readonly notes?: string;
+}
+
+export interface EquipmentAthleteFeedback {
+  readonly fatigue?: EquipmentConditionLevel;
+  readonly slipping?: EquipmentConditionLevel;
+  readonly stability?: EquipmentConditionLevel;
+  readonly edgeGrip?: EquipmentConditionLevel;
+  readonly confidence?: EquipmentConditionLevel;
+  readonly comments?: string;
+}
+
 export interface EquipmentSnapshot extends AnalysisOwnership, AnalysisAuditFields {
   readonly id: string;
   readonly sessionId?: string;
   readonly status: EquipmentSnapshotStatus;
   readonly sourceType: Extract<AnalysisSourceType, "manual-entry" | "firestore-record" | "imported-record">;
   readonly category: EquipmentCategory;
+  readonly setupName?: string;
+  readonly isCurrent?: boolean;
+  readonly boot?: EquipmentBootDetails;
+  readonly blade?: EquipmentBladeDetails;
+  readonly sharpening?: EquipmentSharpeningDetails;
+  readonly ice?: EquipmentIceDetails;
+  readonly athleteFeedback?: EquipmentAthleteFeedback;
   readonly bootModel?: string;
   readonly bladeModel?: string;
   readonly bladeLengthMm?: number;

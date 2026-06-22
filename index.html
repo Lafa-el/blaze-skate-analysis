@@ -1663,7 +1663,7 @@
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, runTransaction, increment, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const analysisV1RoutePattern = /^\/(?:$|sessions(?:\/|$)|videos(?:\/|$)|settings(?:\/|$))/;
+        const analysisV1RoutePattern = /^\/analysis(?:\/|$)/;
         const isAnalysisV1Route = analysisV1RoutePattern.test(window.location.pathname);
 
         // Firebase 动态容灾载入：Vercel 构建会生成 window.__BLAZE_FIREBASE_CONFIG__

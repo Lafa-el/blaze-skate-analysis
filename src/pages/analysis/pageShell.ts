@@ -78,11 +78,11 @@ export function renderMetricCards(cards: readonly { label: string; value: string
 
 export function renderSessionTabs(sessionId: string, active: "overview" | "biomechanics" | "pace" | "equipment" | "report"): string {
   const tabs = [
-    { id: "overview", label: "Session Overview", href: `/sessions/${sessionId}`, icon: "fa-chart-line" },
-    { id: "biomechanics", label: "Biomechanics", href: `/sessions/${sessionId}/biomechanics`, icon: "fa-microscope" },
-    { id: "pace", label: "Pace", href: `/sessions/${sessionId}/pace`, icon: "fa-stopwatch" },
-    { id: "equipment", label: "Equipment", href: `/sessions/${sessionId}/equipment`, icon: "fa-screwdriver-wrench" },
-    { id: "report", label: "Report", href: `/sessions/${sessionId}/report`, icon: "fa-file-lines" },
+    { id: "overview", label: "Session Overview", href: `/analysis/sessions/${sessionId}`, icon: "fa-chart-line" },
+    { id: "biomechanics", label: "Biomechanics", href: `/analysis/sessions/${sessionId}/biomechanics`, icon: "fa-microscope" },
+    { id: "pace", label: "Pace", href: `/analysis/sessions/${sessionId}/pace`, icon: "fa-stopwatch" },
+    { id: "equipment", label: "Equipment", href: `/analysis/sessions/${sessionId}/equipment`, icon: "fa-screwdriver-wrench" },
+    { id: "report", label: "Report", href: `/analysis/sessions/${sessionId}/report`, icon: "fa-file-lines" },
   ] as const;
 
   return `
