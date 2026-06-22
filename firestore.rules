@@ -2,8 +2,83 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /artifacts/{appId}/users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isValidAnalysisCreate(userId) {
+      return isOwner(userId)
+        && request.resource.data.ownerUserId == request.auth.uid
+        && request.resource.data.athleteId == request.auth.uid;
+    }
+
+    function isValidAnalysisUpdate(userId) {
+      return isOwner(userId)
+        && resource.data.ownerUserId == request.auth.uid
+        && request.resource.data.ownerUserId == resource.data.ownerUserId
+        && request.resource.data.athleteId == resource.data.athleteId
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isValidAnalysisDelete(userId) {
+      return isOwner(userId)
+        && resource.data.ownerUserId == request.auth.uid;
+    }
+
+    match /artifacts/{appId}/users/{userId} {
+      match /profile/lindsay {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /completedTasks/{taskId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /equipmentRecords/{recordId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /analysisSessions/{docId} {
+        allow read: if isOwner(userId);
+        allow create: if isValidAnalysisCreate(userId);
+        allow update: if isValidAnalysisUpdate(userId);
+        allow delete: if isValidAnalysisDelete(userId);
+      }
+
+      match /analysisVideos/{docId} {
+        allow read: if isOwner(userId);
+        allow create: if isValidAnalysisCreate(userId);
+        allow update: if isValidAnalysisUpdate(userId);
+        allow delete: if isValidAnalysisDelete(userId);
+      }
+
+      match /biomechanicsFindings/{docId} {
+        allow read: if isOwner(userId);
+        allow create: if isValidAnalysisCreate(userId);
+        allow update: if isValidAnalysisUpdate(userId);
+        allow delete: if isValidAnalysisDelete(userId);
+      }
+
+      match /paceSessions/{docId} {
+        allow read: if isOwner(userId);
+        allow create: if isValidAnalysisCreate(userId);
+        allow update: if isValidAnalysisUpdate(userId);
+        allow delete: if isValidAnalysisDelete(userId);
+      }
+
+      match /equipmentSnapshots/{docId} {
+        allow read: if isOwner(userId);
+        allow create: if isValidAnalysisCreate(userId);
+        allow update: if isValidAnalysisUpdate(userId);
+        allow delete: if isValidAnalysisDelete(userId);
+      }
+
+      match /analysisReports/{docId} {
+        allow read: if isOwner(userId);
+        allow create: if isValidAnalysisCreate(userId);
+        allow update: if isValidAnalysisUpdate(userId);
+        allow delete: if isValidAnalysisDelete(userId);
+      }
     }
   }
 }
