@@ -1,7 +1,9 @@
+import { escapeAttribute } from "./html";
 import { renderEmptyState, renderPageShell, renderSessionTabs, type PageRenderContext } from "./pageShell";
 
 export function PaceLabPage(context: PageRenderContext): string {
   const sessionId = context.sessionId ?? "unknown";
+  const escapedSessionId = escapeAttribute(sessionId);
 
   return renderPageShell({
     eyebrow: "Pace",
@@ -9,7 +11,7 @@ export function PaceLabPage(context: PageRenderContext): string {
     description: `Session ID: ${sessionId}. Add manual lap splits and calculate pace metrics for this Analysis V1 session.`,
     content: `
       ${renderSessionTabs(sessionId, "pace")}
-      <div data-pace-lab data-session-id="${sessionId}" class="space-y-6">
+      <div data-pace-lab data-session-id="${escapedSessionId}" class="space-y-6">
         <section data-pace-session-header class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center gap-3 text-sm text-slate-400">
             <i class="fa-solid fa-spinner"></i>
@@ -25,7 +27,7 @@ export function PaceLabPage(context: PageRenderContext): string {
               </div>
               <i class="fa-solid fa-stopwatch text-skating-pro"></i>
             </div>
-            <form data-pace-session-form data-mode="create" data-session-id="${sessionId}" class="mt-5 space-y-4">
+            <form data-pace-session-form data-mode="create" data-session-id="${escapedSessionId}" class="mt-5 space-y-4">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-bold uppercase tracking-wider text-slate-400" for="pace-distance-type">Distance</label>
@@ -75,7 +77,7 @@ export function PaceLabPage(context: PageRenderContext): string {
               </div>
             </form>
           </section>
-          <section data-pace-session-list data-session-id="${sessionId}" class="space-y-4">
+          <section data-pace-session-list data-session-id="${escapedSessionId}" class="space-y-4">
             ${renderEmptyState("Loading pace sessions", "Fetching manual pace sessions for this analysis session.", "fa-spinner")}
           </section>
         </div>

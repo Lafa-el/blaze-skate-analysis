@@ -15,6 +15,7 @@ import type {
   PaceSession,
 } from "../../types/analysis";
 import { calculatePaceMetrics } from "../../utils/paceMetrics";
+import { escapeAttribute, escapeHtml } from "./html";
 import type { PageRenderContext } from "./pageShell";
 
 interface DashboardData {
@@ -227,7 +228,7 @@ function renderMetric(label: string, value: string, hint: string, icon: string):
     <div class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
       <div class="flex items-center justify-between gap-3">
         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)}</p>
-        <i class="fa-solid ${icon} text-skating-pro"></i>
+        <i class="fa-solid ${escapeAttribute(icon)} text-skating-pro"></i>
       </div>
       <p class="mt-3 text-2xl font-black text-white truncate">${escapeHtml(value)}</p>
       <p class="mt-2 text-xs text-slate-500 truncate">${escapeHtml(hint)}</p>
@@ -237,10 +238,10 @@ function renderMetric(label: string, value: string, hint: string, icon: string):
 
 function renderWorkflowStep(label: string, value: string, href: string, icon: string): string {
   return `
-    <a data-analysis-link href="${href}" class="rounded-xl border border-slate-700 bg-slate-950 p-4 hover:border-skating-pro transition-all">
+    <a data-analysis-link href="${escapeAttribute(href)}" class="rounded-xl border border-slate-700 bg-slate-950 p-4 hover:border-skating-pro transition-all">
       <div class="flex items-center justify-between gap-3">
         <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${escapeHtml(label)}</p>
-        <i class="fa-solid ${icon} text-skating-pro"></i>
+        <i class="fa-solid ${escapeAttribute(icon)} text-skating-pro"></i>
       </div>
       <p class="mt-2 text-sm font-black text-slate-100 truncate">${escapeHtml(value)}</p>
     </a>
@@ -251,7 +252,7 @@ function renderEmptyState(title: string, description: string, icon: string): str
   return `
     <div class="border border-dashed border-slate-700 rounded-2xl p-8 text-center">
       <div class="mx-auto w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 text-xl">
-        <i class="fa-solid ${icon}"></i>
+        <i class="fa-solid ${escapeAttribute(icon)}"></i>
       </div>
       <h2 class="mt-4 text-lg font-bold text-slate-200">${escapeHtml(title)}</h2>
       <p class="mt-2 text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">${escapeHtml(description)}</p>
@@ -331,13 +332,4 @@ function formatSeconds(value: number): string {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unexpected Analysis Dashboard error.";
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }

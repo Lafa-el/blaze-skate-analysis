@@ -11,6 +11,7 @@ import type {
   AnalysisSessionStatus,
   AnalysisTimestamp,
 } from "../../types/analysis";
+import { escapeHtml } from "./html";
 import type { PageRenderContext } from "./pageShell";
 import { renderSessionFormFields } from "./NewAnalysisSessionPage";
 
@@ -423,13 +424,4 @@ function formatStatus(status: AnalysisSessionStatus): string {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unexpected Analysis Session error.";
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }

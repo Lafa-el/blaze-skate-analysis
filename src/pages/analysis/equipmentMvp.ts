@@ -21,6 +21,7 @@ import type {
   IceCondition,
   SharpeningStatus,
 } from "../../types/analysis";
+import { escapeHtml } from "./html";
 import type { PageRenderContext } from "./pageShell";
 
 const EQUIPMENT_CATEGORIES = ["boot", "blade", "rocker", "bend", "alignment", "fit"] as const satisfies readonly EquipmentCategory[];
@@ -779,13 +780,4 @@ function formatDateInput(value: EquipmentSharpeningDetails["sharpenedAt"] | unde
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unexpected Equipment Lab error.";
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }

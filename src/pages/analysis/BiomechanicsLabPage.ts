@@ -1,7 +1,9 @@
+import { escapeAttribute } from "./html";
 import { renderEmptyState, renderPageShell, renderSessionTabs, type PageRenderContext } from "./pageShell";
 
 export function BiomechanicsLabPage(context: PageRenderContext): string {
   const sessionId = context.sessionId ?? "unknown";
+  const escapedSessionId = escapeAttribute(sessionId);
 
   return renderPageShell({
     eyebrow: "Biomechanics",
@@ -18,7 +20,7 @@ export function BiomechanicsLabPage(context: PageRenderContext): string {
             </div>
             <i class="fa-solid fa-microscope text-skating-pro"></i>
           </div>
-          <form data-biomechanics-finding-form data-mode="create" data-session-id="${sessionId}" class="mt-5 space-y-4">
+          <form data-biomechanics-finding-form data-mode="create" data-session-id="${escapedSessionId}" class="mt-5 space-y-4">
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-400" for="finding-title">Issue</label>
               <input id="finding-title" name="title" type="text" required placeholder="e.g. Late knee bend in corner entry" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
@@ -113,7 +115,7 @@ export function BiomechanicsLabPage(context: PageRenderContext): string {
             </div>
           </form>
         </section>
-        <section data-biomechanics-findings data-session-id="${sessionId}" class="space-y-4">
+        <section data-biomechanics-findings data-session-id="${escapedSessionId}" class="space-y-4">
           ${renderEmptyState("Loading biomechanics findings", "Fetching manual findings for this session.", "fa-spinner")}
         </section>
       </div>

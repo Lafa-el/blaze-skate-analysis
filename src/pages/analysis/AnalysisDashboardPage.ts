@@ -1,3 +1,4 @@
+import { escapeHtml } from "./html";
 import { renderPageShell, type PageRenderContext } from "./pageShell";
 
 export function AnalysisDashboardPage(_context: PageRenderContext): string {
@@ -47,7 +48,7 @@ export function AnalysisDashboardPage(_context: PageRenderContext): string {
 function renderLoadingMetric(label: string): string {
   return `
     <div class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
-      <p class="text-xs font-bold uppercase tracking-wider text-slate-400">${label}</p>
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)}</p>
       <p class="mt-3 text-3xl font-black text-white">...</p>
       <p class="mt-2 text-xs text-slate-500">Loading</p>
     </div>

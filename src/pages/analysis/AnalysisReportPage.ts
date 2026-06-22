@@ -1,7 +1,9 @@
+import { escapeAttribute } from "./html";
 import { renderPageShell, renderSessionTabs, type PageRenderContext } from "./pageShell";
 
 export function AnalysisReportPage(context: PageRenderContext): string {
   const sessionId = context.sessionId ?? "unknown";
+  const escapedSessionId = escapeAttribute(sessionId);
 
   return renderPageShell({
     eyebrow: "Report",
@@ -9,7 +11,7 @@ export function AnalysisReportPage(context: PageRenderContext): string {
     description: `Session ID: ${sessionId}. Generate, edit, save, finalize, and export a deterministic Analysis V1 report.`,
     content: `
       ${renderSessionTabs(sessionId, "report")}
-      <section data-analysis-report-mvp data-session-id="${sessionId}" class="space-y-5">
+      <section data-analysis-report-mvp data-session-id="${escapedSessionId}" class="space-y-5">
         <div data-report-session-header class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center gap-3 text-sm text-slate-400">
             <i class="fa-solid fa-spinner"></i>

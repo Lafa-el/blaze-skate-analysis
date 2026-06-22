@@ -1,3 +1,5 @@
+import { encodePathSegment, escapeAttribute, escapeHtml } from "./html";
+
 export interface PageAction {
   readonly label: string;
   readonly href: string;
@@ -31,9 +33,9 @@ export function renderPageShell(definition: PageDefinition): string {
       <div class="bg-skating-card border border-slate-700 rounded-2xl p-6 shadow-xl">
         <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
           <div>
-            <p class="text-xs font-black uppercase tracking-[0.24em] text-skating-neon">${definition.eyebrow}</p>
-            <h1 class="mt-2 text-3xl sm:text-4xl font-black text-white">${definition.title}</h1>
-            <p class="mt-3 text-sm sm:text-base text-slate-400 max-w-3xl leading-relaxed">${definition.description}</p>
+            <p class="text-xs font-black uppercase tracking-[0.24em] text-skating-neon">${escapeHtml(definition.eyebrow)}</p>
+            <h1 class="mt-2 text-3xl sm:text-4xl font-black text-white">${escapeHtml(definition.title)}</h1>
+            <p class="mt-3 text-sm sm:text-base text-slate-400 max-w-3xl leading-relaxed">${escapeHtml(definition.description)}</p>
           </div>
           ${actions ? `<div class="flex flex-wrap gap-2">${actions}</div>` : ""}
         </div>
@@ -47,10 +49,10 @@ export function renderEmptyState(title: string, description: string, icon = "fa-
   return `
     <div class="bg-skating-card/50 border border-dashed border-slate-700 rounded-2xl p-10 text-center">
       <div class="mx-auto w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 text-xl">
-        <i class="fa-solid ${icon}"></i>
+        <i class="fa-solid ${escapeAttribute(icon)}"></i>
       </div>
-      <h2 class="mt-4 text-lg font-bold text-slate-200">${title}</h2>
-      <p class="mt-2 text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">${description}</p>
+      <h2 class="mt-4 text-lg font-bold text-slate-200">${escapeHtml(title)}</h2>
+      <p class="mt-2 text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">${escapeHtml(description)}</p>
     </div>
   `;
 }
@@ -63,11 +65,11 @@ export function renderMetricCards(cards: readonly { label: string; value: string
           (card) => `
             <div class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
               <div class="flex items-center justify-between gap-3">
-                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">${card.label}</p>
-                <i class="fa-solid ${card.icon} text-skating-pro"></i>
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(card.label)}</p>
+                <i class="fa-solid ${escapeAttribute(card.icon)} text-skating-pro"></i>
               </div>
-              <p class="mt-3 text-3xl font-black text-white">${card.value}</p>
-              <p class="mt-2 text-xs text-slate-500">${card.hint}</p>
+              <p class="mt-3 text-3xl font-black text-white">${escapeHtml(card.value)}</p>
+              <p class="mt-2 text-xs text-slate-500">${escapeHtml(card.hint)}</p>
             </div>
           `,
         )
@@ -77,12 +79,13 @@ export function renderMetricCards(cards: readonly { label: string; value: string
 }
 
 export function renderSessionTabs(sessionId: string, active: "overview" | "biomechanics" | "pace" | "equipment" | "report"): string {
+  const encodedSessionId = encodePathSegment(sessionId);
   const tabs = [
-    { id: "overview", label: "Session Overview", href: `/analysis/sessions/${sessionId}`, icon: "fa-chart-line" },
-    { id: "biomechanics", label: "Biomechanics", href: `/analysis/sessions/${sessionId}/biomechanics`, icon: "fa-microscope" },
-    { id: "pace", label: "Pace", href: `/analysis/sessions/${sessionId}/pace`, icon: "fa-stopwatch" },
-    { id: "equipment", label: "Equipment", href: `/analysis/sessions/${sessionId}/equipment`, icon: "fa-screwdriver-wrench" },
-    { id: "report", label: "Report", href: `/analysis/sessions/${sessionId}/report`, icon: "fa-file-lines" },
+    { id: "overview", label: "Session Overview", href: `/analysis/sessions/${encodedSessionId}`, icon: "fa-chart-line" },
+    { id: "biomechanics", label: "Biomechanics", href: `/analysis/sessions/${encodedSessionId}/biomechanics`, icon: "fa-microscope" },
+    { id: "pace", label: "Pace", href: `/analysis/sessions/${encodedSessionId}/pace`, icon: "fa-stopwatch" },
+    { id: "equipment", label: "Equipment", href: `/analysis/sessions/${encodedSessionId}/equipment`, icon: "fa-screwdriver-wrench" },
+    { id: "report", label: "Report", href: `/analysis/sessions/${encodedSessionId}/report`, icon: "fa-file-lines" },
   ] as const;
 
   return `
@@ -96,8 +99,8 @@ export function renderSessionTabs(sessionId: string, active: "overview" | "biome
               : "text-slate-400 hover:text-slate-100 hover:bg-slate-800 border-transparent";
 
             return `
-              <a data-analysis-link href="${tab.href}" class="px-3.5 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-2 ${classes}">
-                <i class="fa-solid ${tab.icon}"></i>${tab.label}
+              <a data-analysis-link href="${escapeAttribute(tab.href)}" class="px-3.5 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-2 ${classes}">
+                <i class="fa-solid ${escapeAttribute(tab.icon)}"></i>${escapeHtml(tab.label)}
               </a>
             `;
           })
@@ -111,8 +114,8 @@ function renderAction(action: PageAction): string {
   const classes = action.tone === "neutral" ? neutralActionClasses : primaryActionClasses;
 
   return `
-    <a data-analysis-link href="${action.href}" class="inline-flex items-center gap-2 border rounded-xl px-4 py-2 text-sm font-bold transition-all ${classes}">
-      <i class="fa-solid ${action.icon}"></i>${action.label}
+    <a data-analysis-link href="${escapeAttribute(action.href)}" class="inline-flex items-center gap-2 border rounded-xl px-4 py-2 text-sm font-bold transition-all ${classes}">
+      <i class="fa-solid ${escapeAttribute(action.icon)}"></i>${escapeHtml(action.label)}
     </a>
   `;
 }

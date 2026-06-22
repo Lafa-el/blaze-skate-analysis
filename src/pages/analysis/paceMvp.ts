@@ -10,6 +10,7 @@ import {
 } from "../../services/analysisFirestoreService";
 import type { PaceDistanceType, PaceSession, PaceSessionStatus } from "../../types/analysis";
 import { calculatePaceMetrics, type CalculatedPaceMetrics } from "../../utils/paceMetrics";
+import { escapeHtml } from "./html";
 import type { PageRenderContext } from "./pageShell";
 
 const DISTANCE_TYPES = ["500m", "777m", "1000m", "1500m", "3000m"] as const satisfies readonly PaceDistanceType[];
@@ -568,13 +569,4 @@ function formatPercent(value: number): string {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unexpected Pace Lab error.";
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }

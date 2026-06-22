@@ -1,7 +1,9 @@
+import { escapeAttribute, escapeHtml } from "./html";
 import { renderPageShell, renderSessionTabs, type PageRenderContext } from "./pageShell";
 
 export function EquipmentLabPage(context: PageRenderContext): string {
   const sessionId = context.sessionId ?? "unknown";
+  const escapedSessionId = escapeAttribute(sessionId);
 
   return renderPageShell({
     eyebrow: "Equipment",
@@ -9,7 +11,7 @@ export function EquipmentLabPage(context: PageRenderContext): string {
     description: `Session ID: ${sessionId}. Record the current boot, blade, sharpening, ice, and athlete feedback snapshot.`,
     content: `
       ${renderSessionTabs(sessionId, "equipment")}
-      <section data-equipment-lab data-session-id="${sessionId}" class="space-y-5">
+      <section data-equipment-lab data-session-id="${escapedSessionId}" class="space-y-5">
         <div data-equipment-session-header class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center gap-3 text-sm text-slate-400">
             <i class="fa-solid fa-spinner"></i>
@@ -120,8 +122,8 @@ export function EquipmentLabPage(context: PageRenderContext): string {
 function renderTextInput(name: string, label: string, placeholder: string): string {
   return `
     <label class="block">
-      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${label}</span>
-      <input name="${name}" type="text" placeholder="${placeholder}" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
+      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)}</span>
+      <input name="${escapeAttribute(name)}" type="text" placeholder="${escapeAttribute(placeholder)}" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
     </label>
   `;
 }
@@ -129,8 +131,8 @@ function renderTextInput(name: string, label: string, placeholder: string): stri
 function renderNumberInput(name: string, label: string, placeholder: string, step: string): string {
   return `
     <label class="block">
-      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${label}</span>
-      <input name="${name}" type="number" step="${step}" placeholder="${placeholder}" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
+      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)}</span>
+      <input name="${escapeAttribute(name)}" type="number" step="${escapeAttribute(step)}" placeholder="${escapeAttribute(placeholder)}" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
     </label>
   `;
 }
@@ -138,8 +140,8 @@ function renderNumberInput(name: string, label: string, placeholder: string, ste
 function renderDateInput(name: string, label: string): string {
   return `
     <label class="block">
-      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${label}</span>
-      <input name="${name}" type="date" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
+      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)}</span>
+      <input name="${escapeAttribute(name)}" type="date" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
     </label>
   `;
 }
@@ -147,9 +149,9 @@ function renderDateInput(name: string, label: string): string {
 function renderSelect(name: string, label: string, values: readonly string[]): string {
   return `
     <label class="block">
-      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${label}</span>
-      <select name="${name}" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
-        ${values.map((value) => `<option value="${value}">${formatOption(value)}</option>`).join("")}
+      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)}</span>
+      <select name="${escapeAttribute(name)}" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
+        ${values.map((value) => `<option value="${escapeAttribute(value)}">${escapeHtml(formatOption(value))}</option>`).join("")}
       </select>
     </label>
   `;
@@ -162,8 +164,8 @@ function renderConditionSelect(name: string, label: string): string {
 function renderTextarea(name: string, label: string, placeholder: string, rows: number): string {
   return `
     <label class="block">
-      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${label}</span>
-      <textarea name="${name}" rows="${rows}" placeholder="${placeholder}" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro"></textarea>
+      <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)}</span>
+      <textarea name="${escapeAttribute(name)}" rows="${escapeAttribute(rows)}" placeholder="${escapeAttribute(placeholder)}" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro"></textarea>
     </label>
   `;
 }

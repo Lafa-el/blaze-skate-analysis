@@ -18,6 +18,7 @@ import {
   type GeneratedReportDraft,
   type ReportSourceData,
 } from "../../utils/analysisReportGenerator";
+import { escapeHtml } from "./html";
 import type { PageRenderContext } from "./pageShell";
 
 interface ReportPageState {
@@ -467,13 +468,4 @@ function formatReportStatus(status: AnalysisReportStatus): string {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unexpected Analysis Report error.";
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
