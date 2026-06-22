@@ -18,8 +18,11 @@ import { calculatePaceMetrics } from "../../utils/paceMetrics";
 import { escapeAttribute, escapeHtml } from "./html";
 import type { PageRenderContext } from "./pageShell";
 
+const DASHBOARD_SESSION_LIMIT = 10;
+
 interface DashboardData {
   readonly sessions: readonly AnalysisSession[];
+  readonly scopedSessions: readonly AnalysisSession[];
   readonly latestSession?: AnalysisSession;
   readonly openFindings: readonly BiomechanicsFinding[];
   readonly latestPaceSession?: PaceSession;
@@ -84,13 +87,15 @@ async function loadDashboard(root: HTMLElement): Promise<void> {
 async function loadDashboardData(context: AnalysisUserContext): Promise<DashboardData> {
   const sessions = await listAnalysisSessionsByAthlete(context, context.athleteId);
   const sortedSessions = [...sessions].sort((first, second) => getTimestampMs(second.startedAt) - getTimestampMs(first.startedAt));
+  const scopedSessions = sortedSessions.slice(0, DASHBOARD_SESSION_LIMIT);
   const latestSession = sortedSessions[0];
-  const findingsBySession = await Promise.all(sortedSessions.map((session) => listFindingsBySession(context, session.id)));
+  const findingsBySession = await Promise.all(scopedSessions.map((session) => listFindingsBySession(context, session.id)));
   const openFindings = findingsBySession.flat().filter((finding) => finding.status === "open");
 
   if (!latestSession) {
     return {
       sessions: sortedSessions,
+      scopedSessions,
       openFindings,
       latestEquipmentSnapshot: null,
       latestReport: null,
@@ -106,6 +111,7 @@ async function loadDashboardData(context: AnalysisUserContext): Promise<Dashboar
 
   return {
     sessions: sortedSessions,
+    scopedSessions,
     latestSession,
     openFindings,
     ...(latestPaceSession ? { latestPaceSession } : {}),
@@ -148,7 +154,12 @@ function renderDashboardMetrics(data: DashboardData): string {
 
   return [
     renderMetric("Sessions", String(data.sessions.length), "Saved Analysis V1 sessions", "fa-layer-group"),
-    renderMetric("Open Findings", String(data.openFindings.length), "Biomechanics findings still open", "fa-microscope"),
+    renderMetric(
+      "Recent Open Findings",
+      String(data.openFindings.length),
+      `Open biomechanics findings in latest ${data.scopedSessions.length} session${data.scopedSessions.length === 1 ? "" : "s"}`,
+      "fa-microscope",
+    ),
     renderMetric("Latest Pace", paceLabel, data.latestPaceSession ? data.latestPaceSession.metrics.distanceType : "No pace data", "fa-stopwatch"),
     renderMetric("Equipment", equipmentLabel, data.latestEquipmentSnapshot ? getEquipmentLabel(data.latestEquipmentSnapshot) : "No snapshot", "fa-screwdriver-wrench"),
     renderMetric("Report", reportLabel, data.latestReport ? "Latest session report" : "No saved report", "fa-file-lines"),
@@ -179,7 +190,7 @@ function renderLatestWorkflow(data: DashboardData): string {
         </a>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        ${renderWorkflowStep("Biomechanics", `${data.openFindings.length} open`, `/analysis/sessions/${sessionId}/biomechanics`, "fa-microscope")}
+        ${renderWorkflowStep("Biomechanics", `${data.openFindings.length} recent open`, `/analysis/sessions/${sessionId}/biomechanics`, "fa-microscope")}
         ${renderWorkflowStep("Pace", data.latestPaceSession ? formatSeconds(data.latestPaceSession.metrics.totalTimeSeconds) : "No data", `/analysis/sessions/${sessionId}/pace`, "fa-stopwatch")}
         ${renderWorkflowStep("Equipment", data.latestEquipmentSnapshot ? getEquipmentLabel(data.latestEquipmentSnapshot) : "No snapshot", `/analysis/sessions/${sessionId}/equipment`, "fa-screwdriver-wrench")}
         ${renderWorkflowStep("Report", data.latestReport ? formatReportStatus(data.latestReport.status) : "No report", `/analysis/sessions/${sessionId}/report`, "fa-file-lines")}
