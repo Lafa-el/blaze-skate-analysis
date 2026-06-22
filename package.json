@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node scripts/generate-firebase-config.mjs && vite",
     "typecheck": "tsc --noEmit",
-    "build": "node scripts/generate-firebase-config.mjs && vite build",
+    "build": "node scripts/generate-firebase-config.mjs && vite build && cp firebase-config.js dist/firebase-config.js",
     "preview": "vite preview",
     "scan:firestore-rules": "node scripts/firestoreRulesCompatibilityScan.js"
   },
