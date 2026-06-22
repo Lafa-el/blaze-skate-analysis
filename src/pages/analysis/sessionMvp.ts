@@ -1,7 +1,6 @@
 import { getAnalysisUserContext, type AnalysisUserContext } from "../../firebase/auth";
 import {
   createAnalysisSession,
-  deleteAnalysisSession,
   getAnalysisSession,
   listAnalysisSessionsByAthlete,
   updateAnalysisSession,
@@ -23,7 +22,7 @@ const SESSION_STATUSES = new Set<AnalysisSessionStatus>(["draft", "processing", 
 
 export function initializeAnalysisSessionMvp(root: HTMLElement, context: PageRenderContext, navigate: Navigate): void {
   bindCreateForm(root, navigate);
-  bindDeleteSessionActions(root, navigate);
+  bindArchiveSessionActions(root, navigate);
 
   if (root.querySelector("[data-session-list]")) {
     void loadSessionList(root);
@@ -66,29 +65,29 @@ function bindCreateForm(root: HTMLElement, navigate: Navigate): void {
   });
 }
 
-function bindDeleteSessionActions(root: HTMLElement, navigate: Navigate): void {
-  if (root.dataset.sessionDeleteBound === "true") {
+function bindArchiveSessionActions(root: HTMLElement, navigate: Navigate): void {
+  if (root.dataset.sessionArchiveBound === "true") {
     return;
   }
 
-  root.dataset.sessionDeleteBound = "true";
+  root.dataset.sessionArchiveBound = "true";
 
   root.addEventListener("click", async (event) => {
-    const target = event.target instanceof Element ? event.target.closest<HTMLButtonElement>("button[data-delete-session-id]") : null;
+    const target = event.target instanceof Element ? event.target.closest<HTMLButtonElement>("button[data-archive-session-id]") : null;
 
     if (!target || !root.contains(target)) {
       return;
     }
 
     event.preventDefault();
-    const sessionId = target.dataset.deleteSessionId;
+    const sessionId = target.dataset.archiveSessionId;
 
     if (!sessionId) {
       return;
     }
 
     const confirmed = window.confirm(
-      "Delete this Analysis Session? Linked biomechanics, pace, equipment, and report data will not be deleted yet.",
+      "Archive this Analysis Session? It will be hidden from the active workflow, but linked biomechanics, pace, equipment, report, and video data will be preserved.",
     );
 
     if (!confirmed) {
@@ -96,20 +95,20 @@ function bindDeleteSessionActions(root: HTMLElement, navigate: Navigate): void {
     }
 
     const originalHtml = target.innerHTML;
-    const status = findDeleteStatus(target);
+    const status = findArchiveStatus(target);
 
     target.disabled = true;
-    target.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>Deleting...`;
-    setDeleteStatus(status, "Deleting session...", "neutral");
+    target.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>Archiving...`;
+    setArchiveStatus(status, "Archiving session...", "neutral");
 
     try {
       const context = await getAnalysisUserContext();
-      await deleteAnalysisSession(context, sessionId);
+      await updateAnalysisSession(context, sessionId, { status: "archived" });
       navigate("/analysis/sessions");
     } catch (error) {
       target.disabled = false;
       target.innerHTML = originalHtml;
-      setDeleteStatus(status, getErrorMessage(error), "error");
+      setArchiveStatus(status, getErrorMessage(error), "error");
     }
   });
 }
@@ -172,6 +171,7 @@ async function loadSessionDetail(container: HTMLElement, sessionId: string): Pro
 
     if (!session) {
       state.innerHTML = renderEmptyState("Session not found", "The requested Analysis V1 session does not exist for this athlete.");
+      renderMissingSessionSummaries(container);
       return;
     }
 
@@ -203,7 +203,9 @@ async function loadSessionDetail(container: HTMLElement, sessionId: string): Pro
 
 async function loadSessions(context: AnalysisUserContext): Promise<AnalysisSession[]> {
   const sessions = await listAnalysisSessionsByAthlete(context, context.athleteId);
-  return [...sessions].sort((first, second) => getTimestampMs(second.startedAt) - getTimestampMs(first.startedAt));
+  return [...sessions]
+    .filter((session) => session.status !== "archived")
+    .sort((first, second) => getTimestampMs(second.startedAt) - getTimestampMs(first.startedAt));
 }
 
 function buildCreatePayload(form: HTMLFormElement, context: AnalysisUserContext): Omit<AnalysisSession, "id" | "createdAt" | "updatedAt"> {
@@ -276,9 +278,9 @@ function readSessionForm(form: HTMLFormElement): {
   };
 }
 
-function renderSessionList(sessions: readonly AnalysisSession[], title = "Saved sessions"): string {
+function renderSessionList(sessions: readonly AnalysisSession[], title = "Active sessions"): string {
   if (sessions.length === 0) {
-    return renderEmptyState("No sessions to display", "Create a new Analysis V1 session to populate this list.");
+    return renderEmptyState("No active sessions to display", "Create a new Analysis V1 session to populate this list. Archived sessions are hidden from the active workflow.");
   }
 
   return `
@@ -312,16 +314,28 @@ function renderSessionCard(session: AnalysisSession): string {
         <a data-analysis-link href="${escapeAttribute(sessionHref)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-bold text-slate-200 hover:border-skating-pro transition-all">
           <i class="fa-solid fa-arrow-right"></i>Open
         </a>
-        <button type="button" data-delete-session-id="${escapeAttribute(session.id)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200 hover:bg-red-500/20 transition-all">
-          <i class="fa-solid fa-trash"></i>Delete
+        <button type="button" data-archive-session-id="${escapeAttribute(session.id)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-200 hover:bg-amber-500/20 transition-all">
+          <i class="fa-solid fa-box-archive"></i>Archive
         </button>
-        <p data-session-delete-status class="text-sm text-slate-400 sm:ml-auto"></p>
+        <p data-session-archive-status class="text-sm text-slate-400 sm:ml-auto"></p>
       </div>
     </article>
   `;
 }
 
 function renderSessionDetail(session: AnalysisSession): string {
+  const archiveAction = session.status === "archived"
+    ? `
+      <button type="button" disabled class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 font-bold text-slate-400 cursor-not-allowed">
+        <i class="fa-solid fa-box-archive"></i>Archived
+      </button>
+    `
+    : `
+      <button type="button" data-archive-session-id="${escapeAttribute(session.id)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-5 py-3 font-bold text-amber-200 hover:bg-amber-500/20 transition-all">
+        <i class="fa-solid fa-box-archive"></i>Archive Session
+      </button>
+    `;
+
   return `
     <div class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -344,11 +358,9 @@ function renderSessionDetail(session: AnalysisSession): string {
           <button type="submit" class="inline-flex items-center justify-center gap-2 bg-skating-pro hover:bg-purple-600 text-white font-bold rounded-xl px-5 py-3 transition-all">
             <i class="fa-solid fa-floppy-disk"></i>Save Changes
           </button>
-          <button type="button" data-delete-session-id="${escapeAttribute(session.id)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-3 font-bold text-red-200 hover:bg-red-500/20 transition-all">
-            <i class="fa-solid fa-trash"></i>Delete Session
-          </button>
+          ${archiveAction}
           <p data-session-form-status class="text-sm text-slate-400"></p>
-          <p data-session-delete-status class="text-sm text-slate-400"></p>
+          <p data-session-archive-status class="text-sm text-slate-400"></p>
         </div>
       </form>
     </div>
@@ -400,13 +412,13 @@ function setFormStatus(form: HTMLFormElement, message: string, tone: "neutral" |
   status.textContent = message;
 }
 
-function findDeleteStatus(button: HTMLButtonElement): HTMLElement | null {
+function findArchiveStatus(button: HTMLButtonElement): HTMLElement | null {
   const card = button.closest("[data-session-card]");
   const form = button.closest("form");
-  return (card ?? form)?.querySelector<HTMLElement>("[data-session-delete-status]") ?? null;
+  return (card ?? form)?.querySelector<HTMLElement>("[data-session-archive-status]") ?? null;
 }
 
-function setDeleteStatus(status: HTMLElement | null, message: string, tone: "neutral" | "error"): void {
+function setArchiveStatus(status: HTMLElement | null, message: string, tone: "neutral" | "error"): void {
   if (!status) {
     return;
   }
@@ -418,6 +430,21 @@ function setDeleteStatus(status: HTMLElement | null, message: string, tone: "neu
 
   status.className = `text-sm font-bold ${toneClasses[tone]}`;
   status.textContent = message;
+}
+
+function renderMissingSessionSummaries(container: HTMLElement): void {
+  const summaryContainers = [
+    container.parentElement?.querySelector<HTMLElement>("[data-session-findings-summary]"),
+    container.parentElement?.querySelector<HTMLElement>("[data-session-pace-summary]"),
+    container.parentElement?.querySelector<HTMLElement>("[data-session-equipment-summary]"),
+    container.parentElement?.querySelector<HTMLElement>("[data-session-report-summary]"),
+  ];
+
+  summaryContainers.forEach((summary) => {
+    if (summary) {
+      summary.innerHTML = renderEmptyState("Session not found", "Linked Analysis V1 lab summaries are hidden because the parent session does not exist.");
+    }
+  });
 }
 
 function renderEmptyState(title: string, description: string): string {

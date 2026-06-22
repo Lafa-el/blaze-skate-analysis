@@ -86,7 +86,9 @@ async function loadDashboard(root: HTMLElement): Promise<void> {
 
 async function loadDashboardData(context: AnalysisUserContext): Promise<DashboardData> {
   const sessions = await listAnalysisSessionsByAthlete(context, context.athleteId);
-  const sortedSessions = [...sessions].sort((first, second) => getTimestampMs(second.startedAt) - getTimestampMs(first.startedAt));
+  const sortedSessions = [...sessions]
+    .filter((session) => session.status !== "archived")
+    .sort((first, second) => getTimestampMs(second.startedAt) - getTimestampMs(first.startedAt));
   const scopedSessions = sortedSessions.slice(0, DASHBOARD_SESSION_LIMIT);
   const latestSession = sortedSessions[0];
   const findingsBySession = await Promise.all(scopedSessions.map((session) => listFindingsBySession(context, session.id)));
@@ -153,7 +155,7 @@ function renderDashboardMetrics(data: DashboardData): string {
   const reportLabel = data.latestReport ? formatReportStatus(data.latestReport.status) : "Missing";
 
   return [
-    renderMetric("Sessions", String(data.sessions.length), "Saved Analysis V1 sessions", "fa-layer-group"),
+    renderMetric("Active Sessions", String(data.sessions.length), "Archived sessions are hidden", "fa-layer-group"),
     renderMetric(
       "Recent Open Findings",
       String(data.openFindings.length),
@@ -169,8 +171,8 @@ function renderDashboardMetrics(data: DashboardData): string {
 function renderLatestWorkflow(data: DashboardData): string {
   if (!data.latestSession) {
     return renderEmptyState(
-      "No Analysis V1 workflow yet",
-      "Create a session to unlock the Biomechanics, Pace, Equipment, and Report workflow.",
+      "No active Analysis V1 workflow yet",
+      "Create a session to unlock the Biomechanics, Pace, Equipment, and Report workflow. Archived sessions are hidden from this dashboard.",
       "fa-route",
     );
   }
@@ -201,7 +203,7 @@ function renderLatestWorkflow(data: DashboardData): string {
 
 function renderRecentSessions(sessions: readonly AnalysisSession[]): string {
   if (sessions.length === 0) {
-    return renderEmptyState("No recent sessions", "Create the first Analysis V1 session to populate this dashboard.", "fa-layer-group");
+    return renderEmptyState("No recent active sessions", "Create the first Analysis V1 session to populate this dashboard. Archived sessions are hidden.", "fa-layer-group");
   }
 
   return `
@@ -209,7 +211,7 @@ function renderRecentSessions(sessions: readonly AnalysisSession[]): string {
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Recent Sessions</p>
-          <h2 class="mt-2 text-xl font-black text-white">Continue recent analysis work</h2>
+          <h2 class="mt-2 text-xl font-black text-white">Continue recent active analysis work</h2>
         </div>
         <a data-analysis-link href="/analysis/sessions" class="text-sm font-bold text-skating-neon hover:text-white transition-colors">View all sessions</a>
       </div>

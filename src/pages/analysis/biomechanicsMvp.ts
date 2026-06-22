@@ -2,6 +2,7 @@ import { getAnalysisUserContext, type AnalysisUserContext } from "../../firebase
 import {
   createBiomechanicsFinding,
   deleteBiomechanicsFinding,
+  getAnalysisSession,
   listFindingsBySession,
   updateBiomechanicsFinding,
   type CreateBiomechanicsFindingInput,
@@ -38,7 +39,6 @@ export function initializeBiomechanicsMvp(root: HTMLElement, context: PageRender
   const labContainer = root.querySelector<HTMLElement>("[data-biomechanics-findings]");
 
   if (labContainer && context.sessionId) {
-    bindCreateFindingForm(root, context.sessionId);
     void loadBiomechanicsFindings(root, context.sessionId);
   }
 
@@ -55,6 +55,12 @@ function bindCreateFindingForm(root: HTMLElement, sessionId: string): void {
   if (!form) {
     return;
   }
+
+  if (form.dataset.findingCreateBound === sessionId) {
+    return;
+  }
+
+  form.dataset.findingCreateBound = sessionId;
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -82,6 +88,7 @@ function bindCreateFindingForm(root: HTMLElement, sessionId: string): void {
 
 async function loadBiomechanicsFindings(root: HTMLElement, sessionId: string): Promise<void> {
   const container = root.querySelector<HTMLElement>("[data-biomechanics-findings]");
+  const form = root.querySelector<HTMLFormElement>('form[data-biomechanics-finding-form][data-mode="create"]');
 
   if (!container) {
     return;
@@ -91,6 +98,23 @@ async function loadBiomechanicsFindings(root: HTMLElement, sessionId: string): P
 
   try {
     const context = await getAnalysisUserContext();
+    const analysisSession = await getAnalysisSession(context, sessionId);
+
+    if (!analysisSession) {
+      if (form) {
+        setFormDisabled(form, true);
+        setFormStatus(form, "Session not found. Findings cannot be added.", "error");
+      }
+
+      container.innerHTML = renderEmptyState("Session not found", "Create or open a valid Analysis Session before adding biomechanics findings.");
+      return;
+    }
+
+    if (form) {
+      setFormDisabled(form, false);
+      bindCreateFindingForm(root, sessionId);
+    }
+
     const findings = await loadFindings(context, sessionId);
     container.innerHTML = renderFindings(findings);
     bindFindingActions(container, context, sessionId, root);
