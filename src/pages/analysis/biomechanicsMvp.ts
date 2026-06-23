@@ -569,7 +569,7 @@ function coerceSide(value: string): SkatingSide {
 }
 
 function buildDescription(observation: string, impact: string): string {
-  return `Observation:\n${observation}\n\nImpact:\n${impact || "Not specified."}`;
+  return `Observation:\n${observation}\n\nImpact:\n${impact || t("common.notSpecified")}`;
 }
 
 function parseDescription(description: string): { readonly observation: string; readonly impact: string } {

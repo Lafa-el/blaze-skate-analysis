@@ -90,7 +90,7 @@ export function renderSessionTabs(sessionId: string, active: "overview" | "biome
   ] as const;
 
   return `
-    <nav class="bg-skating-card border border-slate-700 rounded-2xl p-2 overflow-x-auto no-scrollbar" aria-label="Session navigation">
+    <nav class="bg-skating-card border border-slate-700 rounded-2xl p-2 overflow-x-auto no-scrollbar" aria-label="${escapeAttribute(t("tabs.sessionNavigation"))}">
       <div class="flex min-w-max gap-1">
         ${tabs
           .map((tab) => {

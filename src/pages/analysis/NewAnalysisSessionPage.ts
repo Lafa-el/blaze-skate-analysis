@@ -31,7 +31,7 @@ export function renderSessionFormFields(): string {
     </label>
     <label class="space-y-2">
       <span class="text-xs font-bold uppercase tracking-wider text-slate-400">${t("common.date")}</span>
-      <input name="date" type="date" required class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white focus:outline-none focus:border-skating-pro">
+      <input name="date" type="text" inputmode="numeric" pattern="\\d{4}-\\d{2}-\\d{2}" maxlength="10" required class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white focus:outline-none focus:border-skating-pro" placeholder="${t("newSession.datePlaceholder")}" autocomplete="off">
     </label>
     <label class="space-y-2">
       <span class="text-xs font-bold uppercase tracking-wider text-slate-400">${t("common.type")}</span>

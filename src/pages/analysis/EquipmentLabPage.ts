@@ -59,7 +59,7 @@ export function EquipmentLabPage(context: PageRenderContext): string {
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               ${renderTextInput("bladeRocker", t("equipment.rocker"), "8m / 12m combo")}
-              ${renderTextInput("bladeBend", t("equipment.bend"), "Front bend adjusted")}
+              ${renderTextInput("bladeBend", t("equipment.bend"), t("equipment.bendPlaceholder"))}
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               ${renderNumberInput("leftOffsetMm", t("equipment.leftOffset"), "0", "0.1")}
@@ -80,7 +80,7 @@ export function EquipmentLabPage(context: PageRenderContext): string {
               <h3 class="text-lg font-black text-white">${t("equipment.iceCondition")}</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 ${renderTextInput("iceRink", t("equipment.rink"), t("equipment.rink"))}
-                ${renderTextInput("iceSurface", t("equipment.surface"), "Olympic / NHL / short track")}
+                ${renderTextInput("iceSurface", t("equipment.surface"), t("equipment.surfacePlaceholder"))}
               </div>
               ${renderSelect("iceCondition", t("equipment.condition"), ["unknown", "hard", "soft", "cut-up", "wet", "frosty"])}
               ${renderTextarea("iceNotes", t("equipment.iceNotes"), t("equipment.iceNotesPlaceholder"), 3)}

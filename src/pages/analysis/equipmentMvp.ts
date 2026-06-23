@@ -22,6 +22,7 @@ import type {
   SharpeningStatus,
 } from "../../types/analysis";
 import { escapeHtml } from "./html";
+import { optionLabel, t } from "./i18n";
 import type { PageRenderContext } from "./pageShell";
 
 const EQUIPMENT_CATEGORIES = ["boot", "blade", "rocker", "bend", "alignment", "fit"] as const satisfies readonly EquipmentCategory[];
@@ -75,7 +76,7 @@ function bindEquipmentForm(root: HTMLElement, sessionId: string): void {
       const context = await getAnalysisUserContext();
       const snapshotId = form.dataset.equipmentSnapshotId;
       setFormDisabled(form, true);
-      setFormStatus(form, "Saving equipment snapshot...", "neutral");
+      setFormStatus(form, t("equipment.savingSnapshot"), "neutral");
 
       if (snapshotId) {
         await updateEquipmentSnapshot(context, snapshotId, buildUpdatePayload(form));
@@ -83,7 +84,7 @@ function bindEquipmentForm(root: HTMLElement, sessionId: string): void {
         await createEquipmentSnapshot(context, buildCreatePayload(form, context, sessionId));
       }
 
-      setFormStatus(form, "Equipment snapshot saved.", "success");
+      setFormStatus(form, t("equipment.snapshotSaved"), "success");
       setFormDisabled(form, false);
       await loadEquipmentLab(root, sessionId);
     } catch (error) {
@@ -102,7 +103,7 @@ async function loadEquipmentLab(root: HTMLElement, sessionId: string): Promise<v
     return;
   }
 
-  state.innerHTML = renderLoadingState("Loading equipment snapshot...");
+  state.innerHTML = renderLoadingState(t("equipment.loadingSnapshot"));
 
   try {
     const context = await getAnalysisUserContext();
@@ -110,10 +111,10 @@ async function loadEquipmentLab(root: HTMLElement, sessionId: string): Promise<v
 
     if (!analysisSession) {
       if (header) {
-        header.innerHTML = renderErrorState("Session not found", "The requested Analysis V1 session does not exist.");
+        header.innerHTML = renderErrorState(t("equipment.sessionNotFoundTitle"), t("equipment.sessionNotFoundDescription"));
       }
 
-      state.innerHTML = renderEmptyState("No equipment snapshot available", "Create or open a valid Analysis Session before recording equipment.");
+      state.innerHTML = renderEmptyState(t("equipment.noSnapshotAvailable"), t("equipment.validSessionRequired"));
       setFormDisabled(form, true);
       return;
     }
@@ -127,10 +128,10 @@ async function loadEquipmentLab(root: HTMLElement, sessionId: string): Promise<v
     state.innerHTML = renderSnapshotState(snapshot);
   } catch (error) {
     if (header) {
-      header.innerHTML = renderErrorState("Unable to load session", getErrorMessage(error));
+      header.innerHTML = renderErrorState(t("equipment.unableLoadSession"), getErrorMessage(error));
     }
 
-    state.innerHTML = renderErrorState("Unable to load equipment snapshot", getErrorMessage(error));
+    state.innerHTML = renderErrorState(t("equipment.unableLoadSnapshot"), getErrorMessage(error));
   }
 }
 
@@ -140,7 +141,7 @@ async function loadEquipmentSummary(container: HTMLElement, sessionId: string): 
     const snapshot = await getEquipmentSnapshotBySession(context, sessionId);
     container.innerHTML = renderEquipmentSummary(snapshot, sessionId);
   } catch (error) {
-    container.innerHTML = renderErrorState("Unable to load equipment summary", getErrorMessage(error));
+    container.innerHTML = renderErrorState(t("equipment.unableLoadSummary"), getErrorMessage(error));
   }
 }
 
@@ -217,7 +218,7 @@ function readEquipmentForm(form: HTMLFormElement): EquipmentFormValues {
     && leftOffsetMm === undefined
     && rightOffsetMm === undefined
   ) {
-    throw new Error("Add at least one equipment detail, feedback field, or recommendation.");
+    throw new Error(t("equipment.detailRequired"));
   }
 
   return stripUndefined({
@@ -382,12 +383,12 @@ function renderEquipmentHeader(title: string, sessionId: string): string {
   return `
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Current Session</p>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("equipment.currentSession")}</p>
         <h2 class="mt-2 text-xl font-black text-white">${escapeHtml(title)}</h2>
-        <p class="mt-2 text-sm text-slate-400">Equipment data is scoped to session ${escapeHtml(sessionId)}.</p>
+        <p class="mt-2 text-sm text-slate-400">${t("equipment.scopedToSession", { sessionId })}</p>
       </div>
       <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-bold text-slate-200 hover:border-skating-pro transition-all">
-        <i class="fa-solid fa-chart-line"></i>Session Overview
+        <i class="fa-solid fa-chart-line"></i>${t("equipment.sessionOverview")}
       </a>
     </div>
   `;
@@ -395,7 +396,7 @@ function renderEquipmentHeader(title: string, sessionId: string): string {
 
 function renderSnapshotState(snapshot: EquipmentSnapshot | null): string {
   if (!snapshot) {
-    return renderEmptyState("No equipment snapshot yet", "Save the first setup snapshot for this Analysis Session.");
+    return renderEmptyState(t("equipment.emptyTitle"), t("equipment.emptyDescription"));
   }
 
   const bootLabel = formatBootDetails(snapshot.boot) ?? snapshot.bootModel;
@@ -407,56 +408,56 @@ function renderSnapshotState(snapshot: EquipmentSnapshot | null): string {
     <div class="space-y-4">
       <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Saved Snapshot</p>
-          <h2 class="mt-2 text-2xl font-black text-white">${escapeHtml(snapshot.setupName || `${formatCategory(snapshot.category)} setup`)}</h2>
-          <p class="mt-2 text-sm text-slate-400">Structured equipment data is saved with legacy summary fields for compatibility.</p>
+          <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400">${t("equipment.savedSnapshot")}</p>
+          <h2 class="mt-2 text-2xl font-black text-white">${escapeHtml(snapshot.setupName || `${formatCategory(snapshot.category)} ${t("equipment.setup")}`)}</h2>
+          <p class="mt-2 text-sm text-slate-400">${t("equipment.compatibilityNote")}</p>
         </div>
         <div class="flex flex-wrap gap-2">
           <span class="rounded-full border border-skating-pro/40 bg-purple-500/10 px-3 py-1 text-xs font-bold text-purple-200">${escapeHtml(formatStatus(snapshot.status))}</span>
-          ${snapshot.isCurrent === false ? "" : '<span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-200">Current</span>'}
+          ${snapshot.isCurrent === false ? "" : `<span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-200">${t("equipment.current")}</span>`}
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-        ${renderDetailTile("Boot", bootLabel)}
-        ${renderDetailTile("Blade", bladeLabel)}
-        ${renderDetailTile("Blade Length", bladeLength === undefined ? undefined : `${bladeLength} mm`)}
-        ${renderDetailTile("Rocker", rocker)}
-        ${renderDetailTile("Left Offset", snapshot.leftOffsetMm === undefined ? undefined : `${snapshot.leftOffsetMm} mm`)}
-        ${renderDetailTile("Right Offset", snapshot.rightOffsetMm === undefined ? undefined : `${snapshot.rightOffsetMm} mm`)}
+        ${renderDetailTile(t("equipment.boot"), bootLabel)}
+        ${renderDetailTile(t("equipment.blade"), bladeLabel)}
+        ${renderDetailTile(t("equipment.bladeLength"), bladeLength === undefined ? undefined : `${bladeLength} mm`)}
+        ${renderDetailTile(t("equipment.rocker"), rocker)}
+        ${renderDetailTile(t("equipment.leftOffset"), snapshot.leftOffsetMm === undefined ? undefined : `${snapshot.leftOffsetMm} mm`)}
+        ${renderDetailTile(t("equipment.rightOffset"), snapshot.rightOffsetMm === undefined ? undefined : `${snapshot.rightOffsetMm} mm`)}
       </div>
-      ${renderStructuredBlock("Boot Details", renderKeyValues([
-        ["Brand", snapshot.boot?.brand],
-        ["Model", snapshot.boot?.model],
-        ["Size", snapshot.boot?.size],
-        ["Notes", snapshot.boot?.notes],
+      ${renderStructuredBlock(t("equipment.bootDetails"), renderKeyValues([
+        [t("equipment.brand"), snapshot.boot?.brand],
+        [t("equipment.model"), snapshot.boot?.model],
+        [t("equipment.size"), snapshot.boot?.size],
+        [t("common.notes"), snapshot.boot?.notes],
       ]))}
-      ${renderStructuredBlock("Blade Details", renderKeyValues([
-        ["Brand", snapshot.blade?.brand],
-        ["Model", snapshot.blade?.model],
-        ["Cup", snapshot.blade?.cup],
-        ["Bend", snapshot.blade?.bend],
-        ["Notes", snapshot.blade?.notes],
+      ${renderStructuredBlock(t("equipment.bladeDetails"), renderKeyValues([
+        [t("equipment.brand"), snapshot.blade?.brand],
+        [t("equipment.model"), snapshot.blade?.model],
+        [t("equipment.cup"), snapshot.blade?.cup],
+        [t("equipment.bend"), snapshot.blade?.bend],
+        [t("common.notes"), snapshot.blade?.notes],
       ]))}
-      ${renderStructuredBlock("Sharpening", renderKeyValues([
-        ["Status", snapshot.sharpening?.status],
-        ["Sharpened", formatDateInput(snapshot.sharpening?.sharpenedAt)],
-        ["Notes", snapshot.sharpening?.notes],
+      ${renderStructuredBlock(t("equipment.sharpening"), renderKeyValues([
+        [t("common.status"), snapshot.sharpening?.status ? optionLabel(snapshot.sharpening.status) : undefined],
+        [t("equipment.sharpened"), formatDateInput(snapshot.sharpening?.sharpenedAt)],
+        [t("common.notes"), snapshot.sharpening?.notes],
       ], snapshot.bendNotes))}
-      ${renderStructuredBlock("Ice Condition", renderKeyValues([
-        ["Rink", snapshot.ice?.rink],
-        ["Surface", snapshot.ice?.surface],
-        ["Condition", snapshot.ice?.condition],
-        ["Notes", snapshot.ice?.notes],
+      ${renderStructuredBlock(t("equipment.iceCondition"), renderKeyValues([
+        [t("equipment.rink"), snapshot.ice?.rink],
+        [t("equipment.surface"), snapshot.ice?.surface],
+        [t("equipment.condition"), snapshot.ice?.condition ? optionLabel(snapshot.ice.condition) : undefined],
+        [t("common.notes"), snapshot.ice?.notes],
       ]))}
-      ${renderStructuredBlock("Athlete Feedback", renderKeyValues([
-        ["Fatigue", snapshot.athleteFeedback?.fatigue],
-        ["Slipping", snapshot.athleteFeedback?.slipping],
-        ["Stability", snapshot.athleteFeedback?.stability],
-        ["Edge Grip", snapshot.athleteFeedback?.edgeGrip],
-        ["Confidence", snapshot.athleteFeedback?.confidence],
-        ["Comments", snapshot.athleteFeedback?.comments],
+      ${renderStructuredBlock(t("equipment.athleteFeedback"), renderKeyValues([
+        [t("equipment.fatigue"), snapshot.athleteFeedback?.fatigue ? optionLabel(snapshot.athleteFeedback.fatigue) : undefined],
+        [t("equipment.slipping"), snapshot.athleteFeedback?.slipping ? optionLabel(snapshot.athleteFeedback.slipping) : undefined],
+        [t("equipment.stability"), snapshot.athleteFeedback?.stability ? optionLabel(snapshot.athleteFeedback.stability) : undefined],
+        [t("equipment.edgeGrip"), snapshot.athleteFeedback?.edgeGrip ? optionLabel(snapshot.athleteFeedback.edgeGrip) : undefined],
+        [t("equipment.confidence"), snapshot.athleteFeedback?.confidence ? optionLabel(snapshot.athleteFeedback.confidence) : undefined],
+        [t("equipment.comments"), snapshot.athleteFeedback?.comments],
       ], (snapshot.symptoms ?? []).join("\n")))}
-      ${renderListBlock("Recommendations", snapshot.recommendations)}
+      ${renderListBlock(t("common.recommendations"), snapshot.recommendations)}
     </div>
   `;
 }
@@ -466,30 +467,30 @@ function renderEquipmentSummary(snapshot: EquipmentSnapshot | null, sessionId: s
     return `
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Equipment Summary</p>
-          <h2 class="mt-2 text-xl font-black text-white">No equipment snapshot linked to this session</h2>
-          <p class="mt-2 text-sm text-slate-400">Add the current boot and blade setup before generating equipment-aware analysis notes.</p>
+          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("equipment.summary")}</p>
+          <h2 class="mt-2 text-xl font-black text-white">${t("equipment.noLinkedSnapshot")}</h2>
+          <p class="mt-2 text-sm text-slate-400">${t("equipment.addBeforeNotes")}</p>
         </div>
         <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}/equipment" class="inline-flex items-center justify-center gap-2 rounded-xl border border-skating-pro bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 hover:bg-purple-500/20 transition-all">
-          <i class="fa-solid fa-screwdriver-wrench"></i>Open Equipment Lab
+          <i class="fa-solid fa-screwdriver-wrench"></i>${t("equipment.openLab")}
         </a>
       </div>
     `;
   }
 
-  const bootLabel = formatBootDetails(snapshot.boot) ?? snapshot.bootModel ?? "Boot not set";
-  const bladeLabel = formatBladeModel(snapshot.blade) ?? snapshot.bladeModel ?? "Blade not set";
+  const bootLabel = formatBootDetails(snapshot.boot) ?? snapshot.bootModel ?? t("equipment.bootNotSet");
+  const bladeLabel = formatBladeModel(snapshot.blade) ?? snapshot.bladeModel ?? t("equipment.bladeNotSet");
   const bladeLength = snapshot.blade?.lengthMm ?? snapshot.bladeLengthMm;
 
   return `
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Equipment Summary</p>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("equipment.summary")}</p>
         <h2 class="mt-2 text-xl font-black text-white">${escapeHtml(snapshot.setupName || `${bootLabel} · ${bladeLabel}`)}</h2>
-        <p class="mt-2 text-sm text-slate-400">Status: ${escapeHtml(formatStatus(snapshot.status))} · Category: ${escapeHtml(formatCategory(snapshot.category))}${bladeLength === undefined ? "" : ` · Blade length: ${escapeHtml(String(bladeLength))} mm`}</p>
+        <p class="mt-2 text-sm text-slate-400">${t("common.status")}: ${escapeHtml(formatStatus(snapshot.status))} · ${t("common.category")}: ${escapeHtml(formatCategory(snapshot.category))}${bladeLength === undefined ? "" : ` · ${t("equipment.bladeLength")}: ${escapeHtml(String(bladeLength))} mm`}</p>
       </div>
       <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}/equipment" class="inline-flex items-center justify-center gap-2 rounded-xl border border-skating-pro bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 hover:bg-purple-500/20 transition-all">
-        <i class="fa-solid fa-screwdriver-wrench"></i>Open Equipment Lab
+        <i class="fa-solid fa-screwdriver-wrench"></i>${t("equipment.openLab")}
       </a>
     </div>
   `;
@@ -499,7 +500,7 @@ function renderDetailTile(label: string, value: string | undefined): string {
   return `
     <div class="rounded-xl border border-slate-700 bg-slate-950 p-3">
       <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${escapeHtml(label)}</p>
-      <p class="mt-1 text-sm font-black text-slate-100">${escapeHtml(value || "Not recorded")}</p>
+      <p class="mt-1 text-sm font-black text-slate-100">${escapeHtml(value || t("equipment.notRecorded"))}</p>
     </div>
   `;
 }
@@ -692,7 +693,7 @@ function readOptionalNumber(value: FormDataEntryValue | null): number | undefine
   const parsed = Number(text);
 
   if (!Number.isFinite(parsed)) {
-    throw new Error("Numeric equipment fields must be valid numbers.");
+    throw new Error(t("biomechanics.numericFields"));
   }
 
   return parsed;
@@ -731,27 +732,11 @@ function coerceIceCondition(value: string): IceCondition {
 }
 
 function formatCategory(category: EquipmentCategory): string {
-  const labels = {
-    boot: "Boot",
-    blade: "Blade",
-    rocker: "Rocker",
-    bend: "Bend",
-    alignment: "Alignment",
-    fit: "Fit",
-  } as const;
-
-  return labels[category];
+  return optionLabel(category);
 }
 
 function formatStatus(status: EquipmentSnapshotStatus): string {
-  const labels = {
-    draft: "Draft",
-    active: "Active",
-    superseded: "Superseded",
-    archived: "Archived",
-  } as const;
-
-  return labels[status];
+  return optionLabel(status);
 }
 
 function formatOptionalNumber(value: number | undefined): string {
@@ -779,5 +764,5 @@ function formatDateInput(value: EquipmentSharpeningDetails["sharpenedAt"] | unde
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unexpected Equipment Lab error.";
+  return error instanceof Error ? error.message : t("equipment.unexpectedError");
 }

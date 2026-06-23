@@ -20,6 +20,7 @@ type Navigate = (path: string) => void;
 
 const SESSION_CATEGORIES = new Set<AnalysisCategory>(["biomechanics", "pace", "equipment", "composite"]);
 const SESSION_STATUSES = new Set<AnalysisSessionStatus>(["draft", "processing", "ready", "reviewed", "archived"]);
+const SESSION_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function initializeAnalysisSessionMvp(root: HTMLElement, context: PageRenderContext, navigate: Navigate): void {
   bindCreateForm(root, navigate);
@@ -267,6 +268,10 @@ function readSessionForm(form: HTMLFormElement): {
     throw new Error(t("sessions.dateRequired"));
   }
 
+  if (!isValidSessionDate(date)) {
+    throw new Error(t("sessions.dateFormatRequired"));
+  }
+
   return {
     title,
     startedAt: `${date}T00:00:00.000Z`,
@@ -275,6 +280,15 @@ function readSessionForm(form: HTMLFormElement): {
     summary,
     tags,
   };
+}
+
+function isValidSessionDate(value: string): boolean {
+  if (!SESSION_DATE_PATTERN.test(value)) {
+    return false;
+  }
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
 function renderSessionList(sessions: readonly AnalysisSession[], title = t("sessions.activeListTitle")): string {
