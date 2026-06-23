@@ -1,13 +1,14 @@
+import { t } from "./i18n";
 import { renderEmptyState, renderPageShell, type PageRenderContext } from "./pageShell";
 
 export function VideoDetailPage(context: PageRenderContext): string {
   const videoId = context.videoId ?? "unknown";
 
   return renderPageShell({
-    eyebrow: "Video",
-    title: "Video Detail",
-    description: `Video ID: ${videoId}. This detail route is ready for AnalysisVideo data loading.`,
-    actions: [{ label: "Video Library", href: "/analysis/videos", icon: "fa-video", tone: "neutral" }],
-    content: renderEmptyState("Video details are not loaded yet", "Playback metadata and linked sessions will be added after the route skeleton is accepted.", "fa-circle-play"),
+    eyebrow: t("video.eyebrow"),
+    title: t("video.title"),
+    description: t("video.description", { videoId }),
+    actions: [{ label: t("video.library"), href: "/analysis/videos", icon: "fa-video", tone: "neutral" }],
+    content: renderEmptyState(t("video.emptyTitle"), t("video.emptyDescription"), "fa-circle-play"),
   });
 }

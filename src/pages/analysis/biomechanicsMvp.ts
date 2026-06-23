@@ -17,6 +17,7 @@ import type {
   SkatingSide,
 } from "../../types/analysis";
 import { escapeHtml } from "./html";
+import { optionLabel, t } from "./i18n";
 import type { PageRenderContext } from "./pageShell";
 
 const ISSUE_TYPES = [
@@ -69,14 +70,14 @@ function bindCreateFindingForm(root: HTMLElement, sessionId: string): void {
       const context = await getAnalysisUserContext();
       const payload = buildCreatePayload(form, context, sessionId);
       setFormDisabled(form, true);
-      setFormStatus(form, "Saving finding...", "neutral");
+      setFormStatus(form, t("biomechanics.savingFinding"), "neutral");
       await createBiomechanicsFinding(context, payload);
       form.reset();
       setNamedField(form, "issueType", "posture");
       setNamedField(form, "side", "both");
       setNamedField(form, "severity", "info");
       setNamedField(form, "status", "open");
-      setFormStatus(form, "Finding saved.", "success");
+      setFormStatus(form, t("biomechanics.findingSaved"), "success");
       setFormDisabled(form, false);
       await loadBiomechanicsFindings(root, sessionId);
     } catch (error) {
@@ -94,7 +95,7 @@ async function loadBiomechanicsFindings(root: HTMLElement, sessionId: string): P
     return;
   }
 
-  container.innerHTML = renderLoadingState("Loading biomechanics findings...");
+  container.innerHTML = renderLoadingState(t("biomechanics.loadingTitle"));
 
   try {
     const context = await getAnalysisUserContext();
@@ -103,10 +104,10 @@ async function loadBiomechanicsFindings(root: HTMLElement, sessionId: string): P
     if (!analysisSession) {
       if (form) {
         setFormDisabled(form, true);
-        setFormStatus(form, "Session not found. Findings cannot be added.", "error");
+        setFormStatus(form, t("biomechanics.sessionMissingNoCreate"), "error");
       }
 
-      container.innerHTML = renderEmptyState("Session not found", "Create or open a valid Analysis Session before adding biomechanics findings.");
+      container.innerHTML = renderEmptyState(t("sessions.notFoundTitle"), t("biomechanics.validSessionRequired"));
       return;
     }
 
@@ -119,7 +120,7 @@ async function loadBiomechanicsFindings(root: HTMLElement, sessionId: string): P
     container.innerHTML = renderFindings(findings);
     bindFindingActions(container, context, sessionId, root);
   } catch (error) {
-    container.innerHTML = renderErrorState("Unable to load biomechanics findings", getErrorMessage(error));
+    container.innerHTML = renderErrorState(t("biomechanics.unableLoad"), getErrorMessage(error));
   }
 }
 
@@ -129,7 +130,7 @@ async function loadFindingsSummary(container: HTMLElement, sessionId: string): P
     const findings = await loadFindings(context, sessionId);
     container.innerHTML = renderFindingsSummary(findings, sessionId);
   } catch (error) {
-    container.innerHTML = renderErrorState("Unable to load findings summary", getErrorMessage(error));
+    container.innerHTML = renderErrorState(t("biomechanics.unableSummary"), getErrorMessage(error));
   }
 }
 
@@ -146,16 +147,16 @@ function bindFindingActions(container: HTMLElement, context: AnalysisUserContext
         const findingId = form.dataset.findingId;
 
         if (!findingId) {
-          setFormStatus(form, "Missing finding id.", "error");
+          setFormStatus(form, t("biomechanics.missingFindingId"), "error");
           return;
         }
 
         try {
           const payload = buildUpdatePayload(form);
           setFormDisabled(form, true);
-          setFormStatus(form, "Saving finding...", "neutral");
+          setFormStatus(form, t("biomechanics.savingFinding"), "neutral");
           await updateBiomechanicsFinding(context, findingId, payload);
-          setFormStatus(form, "Finding saved.", "success");
+          setFormStatus(form, t("biomechanics.findingSaved"), "success");
           setFormDisabled(form, false);
           await loadBiomechanicsFindings(root, sessionId);
         } catch (error) {
@@ -174,7 +175,7 @@ function bindFindingActions(container: HTMLElement, context: AnalysisUserContext
           return;
         }
 
-        if (!window.confirm("Delete this biomechanics finding?")) {
+        if (!window.confirm(t("biomechanics.deleteConfirm"))) {
           return;
         }
 
@@ -185,7 +186,7 @@ function bindFindingActions(container: HTMLElement, context: AnalysisUserContext
           await loadBiomechanicsFindings(root, sessionId);
         } catch (error) {
           button.disabled = false;
-          container.insertAdjacentHTML("afterbegin", renderErrorState("Unable to delete finding", getErrorMessage(error)));
+          container.insertAdjacentHTML("afterbegin", renderErrorState(t("biomechanics.unableDelete"), getErrorMessage(error)));
         }
       });
     });
@@ -230,15 +231,15 @@ function readFindingForm(form: HTMLFormElement): Omit<
   const confidenceScore = readOptionalNumber(formData.get("confidenceScore"));
 
   if (!title) {
-    throw new Error("Issue title is required.");
+    throw new Error(t("biomechanics.issueRequired"));
   }
 
   if (!observation) {
-    throw new Error("Observation is required.");
+    throw new Error(t("biomechanics.observationRequired"));
   }
 
   if (confidenceScore !== undefined && (confidenceScore < 0 || confidenceScore > 1)) {
-    throw new Error("Confidence must be between 0 and 1.");
+    throw new Error(t("biomechanics.confidenceRange"));
   }
 
   return {
@@ -261,8 +262,8 @@ function readFindingForm(form: HTMLFormElement): Omit<
 function renderFindings(findings: readonly BiomechanicsFinding[]): string {
   if (findings.length === 0) {
     return renderEmptyState(
-      "No biomechanics findings yet",
-      "Add the first manual finding for this session. MediaPipe and automatic pose analysis are intentionally out of scope for this MVP.",
+      t("biomechanics.emptyTitle"),
+      t("biomechanics.emptyDescription"),
     );
   }
 
@@ -278,8 +279,8 @@ function renderFindings(findings: readonly BiomechanicsFinding[]): string {
       <div class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Findings</p>
-            <h2 class="mt-1 text-2xl font-black text-white">${findings.length} biomechanics finding${findings.length === 1 ? "" : "s"}</h2>
+            <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400">${t("biomechanics.findings")}</p>
+            <h2 class="mt-1 text-2xl font-black text-white">${t("biomechanics.findingCount", { count: findings.length })}</h2>
           </div>
           <div class="flex flex-wrap gap-2">${renderSeverityCounts(findings)}</div>
         </div>
@@ -305,7 +306,7 @@ function renderFindingGroup(group: { readonly issueType: BiomechanicsIssueType; 
 
 function renderFindingCard(finding: BiomechanicsFinding): string {
   const sections = getFindingSections(finding);
-  const confidence = typeof finding.confidenceScore === "number" ? `${Math.round(finding.confidenceScore * 100)}%` : "Not set";
+  const confidence = typeof finding.confidenceScore === "number" ? `${Math.round(finding.confidenceScore * 100)}%` : t("common.notSet");
   const videoTime = formatTimeRange(finding.timeRange, finding.frameTimeSeconds);
   const videoId = finding.videoId ?? "";
 
@@ -314,7 +315,7 @@ function renderFindingCard(finding: BiomechanicsFinding): string {
       <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div>
           <h4 class="text-lg font-black text-white">${escapeHtml(finding.title)}</h4>
-          <p class="mt-1 text-sm text-slate-400">${formatIssueType(finding.issueType)} · ${formatSide(finding.side)} side</p>
+          <p class="mt-1 text-sm text-slate-400">${formatIssueType(finding.issueType)} · ${formatSide(finding.side)}</p>
         </div>
         <div class="flex flex-wrap gap-2">
           ${renderSeverityBadge(finding.severity)}
@@ -323,40 +324,40 @@ function renderFindingCard(finding: BiomechanicsFinding): string {
       </div>
       <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <div class="rounded-xl border border-slate-700 bg-slate-950 p-3">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Confidence</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("biomechanics.confidence")}</p>
           <p class="mt-1 text-sm font-bold text-slate-200">${escapeHtml(confidence)}</p>
         </div>
         <div class="rounded-xl border border-slate-700 bg-slate-950 p-3">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Video Time</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("biomechanics.videoTime")}</p>
           <p class="mt-1 text-sm font-bold text-slate-200">${escapeHtml(videoTime)}</p>
         </div>
         <div class="rounded-xl border border-slate-700 bg-slate-950 p-3">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Trend Key</p>
-          <p class="mt-1 text-sm font-bold text-slate-200">${escapeHtml(finding.trendKey || "Not set")}</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("biomechanics.trendKey")}</p>
+          <p class="mt-1 text-sm font-bold text-slate-200">${escapeHtml(finding.trendKey || t("common.notSet"))}</p>
         </div>
       </div>
-      <p class="mt-3 text-xs text-slate-500">Video ID: ${escapeHtml(videoId || "Not linked")}</p>
+      <p class="mt-3 text-xs text-slate-500">${t("biomechanics.videoId")}: ${escapeHtml(videoId || t("common.notLinked"))}</p>
       <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Observation</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("biomechanics.observation")}</p>
           <p class="mt-2 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">${escapeHtml(sections.observation)}</p>
         </div>
         <div>
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Impact</p>
-          <p class="mt-2 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">${escapeHtml(sections.impact || "No impact note yet.")}</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("biomechanics.impact")}</p>
+          <p class="mt-2 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">${escapeHtml(sections.impact || t("biomechanics.noImpact"))}</p>
         </div>
       </div>
       <div class="mt-4">
-        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Recommendations</p>
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("common.recommendations")}</p>
         ${renderRecommendations(finding.recommendations)}
       </div>
       <details class="mt-5 rounded-xl border border-slate-700 bg-slate-950 p-4">
-        <summary class="cursor-pointer text-sm font-bold text-skating-neon">Edit finding</summary>
+        <summary class="cursor-pointer text-sm font-bold text-skating-neon">${t("biomechanics.editFinding")}</summary>
         ${renderEditForm(finding, sections)}
       </details>
       <div class="mt-4 flex justify-end">
         <button type="button" data-delete-finding-id="${escapeHtml(finding.id)}" class="inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200 hover:bg-red-500/20 transition-all">
-          <i class="fa-solid fa-trash"></i>Delete
+          <i class="fa-solid fa-trash"></i>${t("common.delete")}
         </button>
       </div>
     </article>
@@ -366,31 +367,31 @@ function renderFindingCard(finding: BiomechanicsFinding): string {
 function renderEditForm(finding: BiomechanicsFinding, sections: { readonly observation: string; readonly impact: string }): string {
   return `
     <form data-biomechanics-finding-form data-mode="edit" data-finding-id="${escapeHtml(finding.id)}" class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-      ${renderTextInput("title", "Issue", finding.title, true)}
-      ${renderTextInput("videoId", "Video ID", finding.videoId ?? "", false)}
-      ${renderSelect("issueType", "Category", ISSUE_TYPES, finding.issueType, formatIssueType)}
-      ${renderSelect("side", "Side", SIDES, finding.side, formatSide)}
-      ${renderSelect("severity", "Severity", SEVERITIES, finding.severity, formatSeverity)}
-      ${renderSelect("status", "Status", FINDING_STATUSES, finding.status, formatStatus)}
-      ${renderNumberInput("confidenceScore", "Confidence", finding.confidenceScore)}
-      ${renderTextInput("trendKey", "Trend Key", finding.trendKey ?? "", false)}
-      ${renderNumberInput("timeRangeStartSeconds", "Start Time", getTimeRangeStart(finding), false)}
-      ${renderNumberInput("timeRangeEndSeconds", "End Time", finding.timeRange?.endSeconds, false)}
+      ${renderTextInput("title", t("biomechanics.issue"), finding.title, true)}
+      ${renderTextInput("videoId", t("biomechanics.videoId"), finding.videoId ?? "", false)}
+      ${renderSelect("issueType", t("common.category"), ISSUE_TYPES, finding.issueType, formatIssueType)}
+      ${renderSelect("side", t("biomechanics.side"), SIDES, finding.side, formatSide)}
+      ${renderSelect("severity", t("biomechanics.severity"), SEVERITIES, finding.severity, formatSeverity)}
+      ${renderSelect("status", t("common.status"), FINDING_STATUSES, finding.status, formatStatus)}
+      ${renderNumberInput("confidenceScore", t("biomechanics.confidence"), finding.confidenceScore)}
+      ${renderTextInput("trendKey", t("biomechanics.trendKey"), finding.trendKey ?? "", false)}
+      ${renderNumberInput("timeRangeStartSeconds", t("biomechanics.startTime"), getTimeRangeStart(finding), false)}
+      ${renderNumberInput("timeRangeEndSeconds", t("biomechanics.endTime"), finding.timeRange?.endSeconds, false)}
       <div class="lg:col-span-2">
-        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Observation</label>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">${t("biomechanics.observation")}</label>
         <textarea name="observation" rows="4" required class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">${escapeHtml(sections.observation)}</textarea>
       </div>
       <div class="lg:col-span-2">
-        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Impact</label>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">${t("biomechanics.impact")}</label>
         <textarea name="impact" rows="3" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">${escapeHtml(sections.impact)}</textarea>
       </div>
       <div class="lg:col-span-2">
-        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Recommendations</label>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">${t("common.recommendations")}</label>
         <textarea name="recommendations" rows="4" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">${escapeHtml(finding.recommendations.join("\n"))}</textarea>
       </div>
       <div class="lg:col-span-2 flex flex-col sm:flex-row sm:items-center gap-3">
         <button type="submit" class="inline-flex items-center justify-center gap-2 bg-skating-pro hover:bg-purple-600 text-white font-bold rounded-xl px-5 py-3 transition-all">
-          <i class="fa-solid fa-floppy-disk"></i>Save Finding
+          <i class="fa-solid fa-floppy-disk"></i>${t("biomechanics.saveFinding")}
         </button>
         <p data-biomechanics-form-status class="text-sm text-slate-400"></p>
       </div>
@@ -405,12 +406,12 @@ function renderFindingsSummary(findings: readonly BiomechanicsFinding[], session
   return `
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Biomechanics Summary</p>
-        <h2 class="mt-2 text-xl font-black text-white">${findings.length} finding${findings.length === 1 ? "" : "s"} linked to this session</h2>
-        <p class="mt-2 text-sm text-slate-400">${openCount} active · ${highCount} high severity</p>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("biomechanics.summary")}</p>
+        <h2 class="mt-2 text-xl font-black text-white">${t("biomechanics.linkedFindingCount", { count: findings.length })}</h2>
+        <p class="mt-2 text-sm text-slate-400">${t("biomechanics.summaryCounts", { openCount, highCount })}</p>
       </div>
       <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}/biomechanics" class="inline-flex items-center justify-center gap-2 rounded-xl border border-skating-pro bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 hover:bg-purple-500/20 transition-all">
-        <i class="fa-solid fa-microscope"></i>Open Biomechanics Lab
+        <i class="fa-solid fa-microscope"></i>${t("biomechanics.openLab")}
       </a>
     </div>
   `;
@@ -455,7 +456,7 @@ function renderSelect<T extends string>(
 
 function renderRecommendations(recommendations: readonly string[]): string {
   if (recommendations.length === 0) {
-    return `<p class="mt-2 text-sm text-slate-500">No recommendations yet.</p>`;
+    return `<p class="mt-2 text-sm text-slate-500">${t("biomechanics.noRecommendations")}</p>`;
   }
 
   return `
@@ -610,7 +611,7 @@ function readOptionalNumber(value: FormDataEntryValue | null): number | undefine
   const parsed = Number(rawValue);
 
   if (!Number.isFinite(parsed)) {
-    throw new Error("Numeric fields must contain valid numbers.");
+    throw new Error(t("biomechanics.numericFields"));
   }
 
   return parsed;
@@ -625,11 +626,11 @@ function readOptionalTimeRange(formData: FormData): AnalysisTimeRange | undefine
   }
 
   if (startSeconds === undefined) {
-    throw new Error("Start time is required when end time is set.");
+    throw new Error(t("biomechanics.startRequired"));
   }
 
   if (endSeconds !== undefined && endSeconds < startSeconds) {
-    throw new Error("End time must be greater than or equal to start time.");
+    throw new Error(t("biomechanics.endAfterStart"));
   }
 
   return {
@@ -649,7 +650,7 @@ function formatTimeRange(timeRange: AnalysisTimeRange | undefined, frameTimeSeco
       : `${timeRange.startSeconds}s`;
   }
 
-  return typeof frameTimeSeconds === "number" ? `${frameTimeSeconds}s` : "Not set";
+  return typeof frameTimeSeconds === "number" ? `${frameTimeSeconds}s` : t("common.notSet");
 }
 
 function splitLines(value: string): readonly string[] {
@@ -671,55 +672,21 @@ function severityRank(severity: BiomechanicsSeverity): number {
 }
 
 function formatIssueType(issueType: BiomechanicsIssueType): string {
-  const labels = {
-    posture: "Posture",
-    "edge-control": "Edge Control",
-    "knee-flexion": "Knee Flexion",
-    "pelvis-height": "Pelvis Height",
-    "ankle-recovery": "Ankle Recovery",
-    "support-leg": "Support Leg",
-    timing: "Timing",
-    symmetry: "Symmetry",
-    stability: "Stability",
-  } as const;
-
-  return labels[issueType];
+  return optionLabel(issueType);
 }
 
 function formatStatus(status: BiomechanicsFindingStatus): string {
-  const labels = {
-    open: "Open",
-    acknowledged: "Acknowledged",
-    improving: "Improving",
-    resolved: "Resolved",
-    dismissed: "Dismissed",
-  } as const;
-
-  return labels[status];
+  return optionLabel(status);
 }
 
 function formatSeverity(severity: BiomechanicsSeverity): string {
-  const labels = {
-    info: "Info",
-    low: "Low",
-    medium: "Medium",
-    high: "High",
-  } as const;
-
-  return labels[severity];
+  return optionLabel(severity);
 }
 
 function formatSide(side: SkatingSide): string {
-  const labels = {
-    left: "Left",
-    right: "Right",
-    both: "Both",
-    unknown: "Unknown",
-  } as const;
-
-  return labels[side];
+  return optionLabel(side);
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unexpected Biomechanics Lab error.";
+  return error instanceof Error ? error.message : t("biomechanics.unexpectedError");
 }

@@ -16,6 +16,7 @@ import type {
 } from "../../types/analysis";
 import { calculatePaceMetrics } from "../../utils/paceMetrics";
 import { escapeAttribute, escapeHtml } from "./html";
+import { optionLabel, t } from "./i18n";
 import type { PageRenderContext } from "./pageShell";
 
 const DASHBOARD_SESSION_LIMIT = 10;
@@ -67,19 +68,19 @@ async function loadDashboard(root: HTMLElement): Promise<void> {
     const message = getErrorMessage(error);
 
     if (quickActions) {
-      quickActions.innerHTML = renderErrorState("Unable to load dashboard actions", message);
+      quickActions.innerHTML = renderErrorState(t("dashboard.unableActions"), message);
     }
 
     if (metrics) {
-      metrics.innerHTML = renderErrorState("Unable to load dashboard metrics", message);
+      metrics.innerHTML = renderErrorState(t("dashboard.unableMetrics"), message);
     }
 
     if (workflow) {
-      workflow.innerHTML = renderErrorState("Unable to load workflow summary", message);
+      workflow.innerHTML = renderErrorState(t("dashboard.unableWorkflow"), message);
     }
 
     if (recentList) {
-      recentList.innerHTML = renderErrorState("Unable to load recent sessions", message);
+      recentList.innerHTML = renderErrorState(t("dashboard.unableRecent"), message);
     }
   }
 }
@@ -126,20 +127,20 @@ function renderQuickActions(latestSession: AnalysisSession | undefined): string 
   return `
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Next Actions</p>
-        <h2 class="mt-2 text-xl font-black text-white">Start or continue an Analysis V1 workflow</h2>
-        <p class="mt-2 text-sm text-slate-400">Use one session as the anchor, then move through Biomechanics, Pace, Equipment, and Report.</p>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("dashboard.nextActions")}</p>
+        <h2 class="mt-2 text-xl font-black text-white">${t("dashboard.continueWorkflow")}</h2>
+        <p class="mt-2 text-sm text-slate-400">${t("dashboard.workflowHint")}</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <a data-analysis-link href="/analysis/sessions/new" class="inline-flex items-center justify-center gap-2 bg-skating-pro hover:bg-purple-600 text-white font-bold rounded-xl px-4 py-2 transition-all">
-          <i class="fa-solid fa-plus"></i>New Session
+          <i class="fa-solid fa-plus"></i>${t("common.newSession")}
         </a>
         <a data-analysis-link href="/analysis/sessions" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-bold text-slate-200 hover:border-skating-pro transition-all">
-          <i class="fa-solid fa-list"></i>View Sessions
+          <i class="fa-solid fa-list"></i>${t("dashboard.viewSessions")}
         </a>
         ${latestSession ? `
           <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(latestSession.id)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-200 hover:bg-emerald-500/20 transition-all">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i>Open Latest Session
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>${t("dashboard.openLatestSession")}
           </a>
         ` : ""}
       </div>
@@ -150,29 +151,29 @@ function renderQuickActions(latestSession: AnalysisSession | undefined): string 
 function renderDashboardMetrics(data: DashboardData): string {
   const paceLabel = data.latestPaceSession
     ? formatSeconds(calculatePaceMetrics(data.latestPaceSession.metrics.distanceType, data.latestPaceSession.metrics.splitTimesSeconds).totalTimeSeconds)
-    : "None";
-  const equipmentLabel = data.latestEquipmentSnapshot ? "Recorded" : "Missing";
-  const reportLabel = data.latestReport ? formatReportStatus(data.latestReport.status) : "Missing";
+    : t("common.none");
+  const equipmentLabel = data.latestEquipmentSnapshot ? t("common.recorded") : t("common.missing");
+  const reportLabel = data.latestReport ? formatReportStatus(data.latestReport.status) : t("common.missing");
 
   return [
-    renderMetric("Active Sessions", String(data.sessions.length), "Archived sessions are hidden", "fa-layer-group"),
+    renderMetric(t("dashboard.activeSessions"), String(data.sessions.length), t("dashboard.archivedHidden"), "fa-layer-group"),
     renderMetric(
-      "Recent Open Findings",
+      t("dashboard.recentOpenFindings"),
       String(data.openFindings.length),
-      `Open biomechanics findings in latest ${data.scopedSessions.length} session${data.scopedSessions.length === 1 ? "" : "s"}`,
+      t("dashboard.recentOpenFindingsHint", { count: data.scopedSessions.length }),
       "fa-microscope",
     ),
-    renderMetric("Latest Pace", paceLabel, data.latestPaceSession ? data.latestPaceSession.metrics.distanceType : "No pace data", "fa-stopwatch"),
-    renderMetric("Equipment", equipmentLabel, data.latestEquipmentSnapshot ? getEquipmentLabel(data.latestEquipmentSnapshot) : "No snapshot", "fa-screwdriver-wrench"),
-    renderMetric("Report", reportLabel, data.latestReport ? "Latest session report" : "No saved report", "fa-file-lines"),
+    renderMetric(t("dashboard.latestPaceMetric"), paceLabel, data.latestPaceSession ? data.latestPaceSession.metrics.distanceType : t("dashboard.noPaceData"), "fa-stopwatch"),
+    renderMetric(t("dashboard.equipmentMetric"), equipmentLabel, data.latestEquipmentSnapshot ? getEquipmentLabel(data.latestEquipmentSnapshot) : t("common.noSnapshot"), "fa-screwdriver-wrench"),
+    renderMetric(t("dashboard.reportMetric"), reportLabel, data.latestReport ? t("dashboard.latestSessionReport") : t("dashboard.noSavedReport"), "fa-file-lines"),
   ].join("");
 }
 
 function renderLatestWorkflow(data: DashboardData): string {
   if (!data.latestSession) {
     return renderEmptyState(
-      "No active Analysis V1 workflow yet",
-      "Create a session to unlock the Biomechanics, Pace, Equipment, and Report workflow. Archived sessions are hidden from this dashboard.",
+      t("dashboard.noWorkflowTitle"),
+      t("dashboard.noWorkflowDescription"),
       "fa-route",
     );
   }
@@ -183,19 +184,19 @@ function renderLatestWorkflow(data: DashboardData): string {
     <div class="space-y-4">
       <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Latest Session</p>
+          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("dashboard.latestSession")}</p>
           <h2 class="mt-2 text-2xl font-black text-white">${escapeHtml(data.latestSession.title)}</h2>
-          <p class="mt-2 text-sm text-slate-400">${formatDate(data.latestSession.startedAt)} · ${formatSessionStatus(data.latestSession.status)} · ${escapeHtml(data.latestSession.summary || "No session summary yet.")}</p>
+          <p class="mt-2 text-sm text-slate-400">${formatDate(data.latestSession.startedAt)} · ${formatSessionStatus(data.latestSession.status)} · ${escapeHtml(data.latestSession.summary || t("dashboard.noSessionSummary"))}</p>
         </div>
         <a data-analysis-link href="/analysis/sessions/${sessionId}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-skating-pro bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 hover:bg-purple-500/20 transition-all">
-          <i class="fa-solid fa-chart-line"></i>Session Overview
+          <i class="fa-solid fa-chart-line"></i>${t("dashboard.sessionOverview")}
         </a>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        ${renderWorkflowStep("Biomechanics", `${data.openFindings.length} recent open`, `/analysis/sessions/${sessionId}/biomechanics`, "fa-microscope")}
-        ${renderWorkflowStep("Pace", data.latestPaceSession ? formatSeconds(data.latestPaceSession.metrics.totalTimeSeconds) : "No data", `/analysis/sessions/${sessionId}/pace`, "fa-stopwatch")}
-        ${renderWorkflowStep("Equipment", data.latestEquipmentSnapshot ? getEquipmentLabel(data.latestEquipmentSnapshot) : "No snapshot", `/analysis/sessions/${sessionId}/equipment`, "fa-screwdriver-wrench")}
-        ${renderWorkflowStep("Report", data.latestReport ? formatReportStatus(data.latestReport.status) : "No report", `/analysis/sessions/${sessionId}/report`, "fa-file-lines")}
+        ${renderWorkflowStep(t("tabs.biomechanics"), t("dashboard.recentOpen", { count: data.openFindings.length }), `/analysis/sessions/${sessionId}/biomechanics`, "fa-microscope")}
+        ${renderWorkflowStep(t("tabs.pace"), data.latestPaceSession ? formatSeconds(data.latestPaceSession.metrics.totalTimeSeconds) : t("common.noData"), `/analysis/sessions/${sessionId}/pace`, "fa-stopwatch")}
+        ${renderWorkflowStep(t("tabs.equipment"), data.latestEquipmentSnapshot ? getEquipmentLabel(data.latestEquipmentSnapshot) : t("common.noSnapshot"), `/analysis/sessions/${sessionId}/equipment`, "fa-screwdriver-wrench")}
+        ${renderWorkflowStep(t("tabs.report"), data.latestReport ? formatReportStatus(data.latestReport.status) : t("common.noReport"), `/analysis/sessions/${sessionId}/report`, "fa-file-lines")}
       </div>
     </div>
   `;
@@ -203,17 +204,17 @@ function renderLatestWorkflow(data: DashboardData): string {
 
 function renderRecentSessions(sessions: readonly AnalysisSession[]): string {
   if (sessions.length === 0) {
-    return renderEmptyState("No recent active sessions", "Create the first Analysis V1 session to populate this dashboard. Archived sessions are hidden.", "fa-layer-group");
+    return renderEmptyState(t("dashboard.noRecentSessionsTitle"), t("dashboard.noRecentSessionsDescription"), "fa-layer-group");
   }
 
   return `
     <div class="space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Recent Sessions</p>
-          <h2 class="mt-2 text-xl font-black text-white">Continue recent active analysis work</h2>
+          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("dashboard.recentSessions")}</p>
+          <h2 class="mt-2 text-xl font-black text-white">${t("dashboard.continueRecent")}</h2>
         </div>
-        <a data-analysis-link href="/analysis/sessions" class="text-sm font-bold text-skating-neon hover:text-white transition-colors">View all sessions</a>
+        <a data-analysis-link href="/analysis/sessions" class="text-sm font-bold text-skating-neon hover:text-white transition-colors">${t("dashboard.viewAllSessions")}</a>
       </div>
       <div class="grid grid-cols-1 gap-3">
         ${sessions.map(renderRecentSessionCard).join("")}
@@ -230,7 +231,7 @@ function renderRecentSessionCard(session: AnalysisSession): string {
           <h3 class="text-base font-black text-white">${escapeHtml(session.title)}</h3>
           <p class="mt-1 text-sm text-slate-400">${formatDate(session.startedAt)} · ${formatSessionStatus(session.status)}</p>
         </div>
-        <span class="self-start rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-bold text-slate-300">${escapeHtml(session.category)}</span>
+        <span class="self-start rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-bold text-slate-300">${escapeHtml(optionLabel(session.category))}</span>
       </div>
     </a>
   `;
@@ -286,36 +287,20 @@ function getEquipmentLabel(snapshot: EquipmentSnapshot): string {
   const label = snapshot.setupName
     ?? [snapshot.boot?.model ?? snapshot.bootModel, snapshot.blade?.model ?? snapshot.bladeModel].filter(Boolean).join(" / ");
 
-  return label || "Equipment recorded";
+  return label || t("equipment.recorded");
 }
 
 function formatReportStatus(status: AnalysisReport["status"]): string {
-  const labels = {
-    draft: "Draft",
-    generated: "Generated",
-    reviewed: "Final",
-    shared: "Shared",
-    archived: "Archived",
-  } as const;
-
-  return labels[status];
+  return optionLabel(status);
 }
 
 function formatSessionStatus(status: AnalysisSession["status"]): string {
-  const labels = {
-    draft: "Draft",
-    processing: "Processing",
-    ready: "Ready",
-    reviewed: "Reviewed",
-    archived: "Archived",
-  } as const;
-
-  return labels[status];
+  return optionLabel(status);
 }
 
 function formatDate(value: AnalysisTimestamp): string {
   const date = toDate(value);
-  return date ? date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Unknown date";
+  return date ? date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : t("common.unknownDate");
 }
 
 function getTimestampMs(value: AnalysisTimestamp): number {
@@ -344,5 +329,5 @@ function formatSeconds(value: number): string {
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unexpected Analysis Dashboard error.";
+  return error instanceof Error ? error.message : t("common.unexpectedDashboardError");
 }

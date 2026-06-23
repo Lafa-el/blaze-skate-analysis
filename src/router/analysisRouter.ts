@@ -18,6 +18,7 @@ import { initializeEquipmentMvp } from "../pages/analysis/equipmentMvp";
 import { initializePaceMvp } from "../pages/analysis/paceMvp";
 import { initializeReportMvp } from "../pages/analysis/reportMvp";
 import { initializeAnalysisSessionMvp } from "../pages/analysis/sessionMvp";
+import { getAnalysisLanguage, isAnalysisLanguage, setAnalysisLanguage, t, type AnalysisLanguage } from "../pages/analysis/i18n";
 
 type AnalysisPage = (context: PageRenderContext) => string;
 
@@ -63,6 +64,22 @@ export function mountAnalysisRouter(): void {
   };
 
   document.addEventListener("click", (event) => {
+    const languageTarget = event.target instanceof Element
+      ? event.target.closest<HTMLButtonElement>("button[data-analysis-language]")
+      : null;
+
+    if (languageTarget && root.contains(languageTarget)) {
+      event.preventDefault();
+      const language = languageTarget.dataset.analysisLanguage;
+
+      if (language && isAnalysisLanguage(language)) {
+        setAnalysisLanguage(language);
+        render();
+      }
+
+      return;
+    }
+
     const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[data-analysis-link]") : null;
 
     if (!target || target.origin !== window.location.origin) {
@@ -164,11 +181,12 @@ function requireRouteParam(value: string | undefined, name: string): string {
 
 function renderAnalysisApp(match: RouteMatch): string {
   const navigation = [
-    { label: "Dashboard", href: "/analysis", icon: "fa-gauge-high" },
-    { label: "Sessions", href: "/analysis/sessions", icon: "fa-layer-group" },
-    { label: "Videos", href: "/analysis/videos", icon: "fa-video" },
-    { label: "Settings", href: "/analysis/settings", icon: "fa-gear" },
+    { label: t("nav.dashboard"), href: "/analysis", icon: "fa-gauge-high" },
+    { label: t("nav.sessions"), href: "/analysis/sessions", icon: "fa-layer-group" },
+    { label: t("nav.videos"), href: "/analysis/videos", icon: "fa-video" },
+    { label: t("nav.settings"), href: "/analysis/settings", icon: "fa-gear" },
   ];
+  const language = getAnalysisLanguage();
 
   return `
     <div class="w-full max-w-[1400px] space-y-6">
@@ -183,27 +201,52 @@ function renderAnalysisApp(match: RouteMatch): string {
               <p class="text-xl font-black text-white leading-tight">Analysis V1</p>
             </div>
           </a>
-          <nav class="flex flex-wrap gap-2" aria-label="Analysis main navigation">
-            ${navigation
-              .map((item) => {
-                const isActive = item.href === ANALYSIS_BASE_PATH
-                  ? match.context.path === ANALYSIS_BASE_PATH
-                  : match.context.path.startsWith(item.href);
-                const classes = isActive
-                  ? "bg-skating-pro text-white border-skating-pro"
-                  : "bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border-slate-700";
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <nav class="flex flex-wrap gap-2" aria-label="Analysis main navigation">
+              ${navigation
+                .map((item) => {
+                  const isActive = item.href === ANALYSIS_BASE_PATH
+                    ? match.context.path === ANALYSIS_BASE_PATH
+                    : match.context.path.startsWith(item.href);
+                  const classes = isActive
+                    ? "bg-skating-pro text-white border-skating-pro"
+                    : "bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border-slate-700";
 
-                return `
-                  <a data-analysis-link href="${item.href}" class="inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-bold transition-all ${classes}">
-                    <i class="fa-solid ${item.icon}"></i>${item.label}
-                  </a>
-                `;
-              })
-              .join("")}
-          </nav>
+                  return `
+                    <a data-analysis-link href="${item.href}" class="inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-bold transition-all ${classes}">
+                      <i class="fa-solid ${item.icon}"></i>${item.label}
+                    </a>
+                  `;
+                })
+                .join("")}
+            </nav>
+            ${renderLanguageSwitcher(language)}
+          </div>
         </div>
       </header>
       <main>${match.page(match.context)}</main>
+    </div>
+  `;
+}
+
+function renderLanguageSwitcher(language: AnalysisLanguage): string {
+  const renderButton = (value: AnalysisLanguage, label: string) => {
+    const isActive = language === value;
+    const classes = isActive
+      ? "bg-skating-pro text-white border-skating-pro"
+      : "bg-slate-900 text-slate-300 border-slate-700 hover:border-skating-pro hover:text-white";
+
+    return `
+      <button type="button" data-analysis-language="${value}" class="rounded-lg border px-3 py-1.5 text-xs font-black transition-all ${classes}" aria-pressed="${isActive}">
+        ${label}
+      </button>
+    `;
+  };
+
+  return `
+    <div class="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 p-1" aria-label="${t("nav.languageLabel")}">
+      ${renderButton("en", "English")}
+      ${renderButton("zh", "中文")}
     </div>
   `;
 }

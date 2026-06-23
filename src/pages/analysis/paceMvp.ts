@@ -11,6 +11,7 @@ import {
 import type { PaceDistanceType, PaceSession, PaceSessionStatus } from "../../types/analysis";
 import { calculatePaceMetrics, type CalculatedPaceMetrics } from "../../utils/paceMetrics";
 import { escapeHtml } from "./html";
+import { optionLabel, t } from "./i18n";
 import type { PageRenderContext } from "./pageShell";
 
 const DISTANCE_TYPES = ["500m", "777m", "1000m", "1500m", "3000m"] as const satisfies readonly PaceDistanceType[];
@@ -47,10 +48,10 @@ function bindCreatePaceForm(root: HTMLElement, sessionId: string): void {
       const context = await getAnalysisUserContext();
       const payload = buildCreatePayload(form, context, sessionId);
       setFormDisabled(form, true);
-      setFormStatus(form, "Saving pace session...", "neutral");
+      setFormStatus(form, t("pace.savingSession"), "neutral");
       await createPaceSession(context, payload);
       resetCreateForm(form);
-      setFormStatus(form, "Pace session saved.", "success");
+      setFormStatus(form, t("pace.sessionSaved"), "success");
       setFormDisabled(form, false);
       await loadPaceLab(root, sessionId);
     } catch (error) {
@@ -68,7 +69,7 @@ async function loadPaceLab(root: HTMLElement, sessionId: string): Promise<void> 
     return;
   }
 
-  container.innerHTML = renderLoadingState("Loading pace sessions...");
+  container.innerHTML = renderLoadingState(t("pace.loadingTitle"));
 
   try {
     const context = await getAnalysisUserContext();
@@ -76,10 +77,10 @@ async function loadPaceLab(root: HTMLElement, sessionId: string): Promise<void> 
 
     if (!analysisSession) {
       if (header) {
-        header.innerHTML = renderErrorState("Session not found", "The requested Analysis V1 session does not exist.");
+        header.innerHTML = renderErrorState(t("sessions.notFoundTitle"), t("sessions.notFoundDescription"));
       }
 
-      container.innerHTML = renderEmptyState("No pace sessions available", "Create or open a valid Analysis Session before adding pace data.");
+      container.innerHTML = renderEmptyState(t("pace.noSessionsAvailable"), t("pace.validSessionRequired"));
       return;
     }
 
@@ -92,10 +93,10 @@ async function loadPaceLab(root: HTMLElement, sessionId: string): Promise<void> 
     bindPaceSessionActions(container, context, sessionId, root);
   } catch (error) {
     if (header) {
-      header.innerHTML = renderErrorState("Unable to load session", getErrorMessage(error));
+      header.innerHTML = renderErrorState(t("sessions.unableLoadSession"), getErrorMessage(error));
     }
 
-    container.innerHTML = renderErrorState("Unable to load pace sessions", getErrorMessage(error));
+    container.innerHTML = renderErrorState(t("pace.unableLoad"), getErrorMessage(error));
   }
 }
 
@@ -105,7 +106,7 @@ async function loadPaceSummary(container: HTMLElement, sessionId: string): Promi
     const paceSessions = await loadPaceSessions(context, sessionId);
     container.innerHTML = renderPaceSummary(paceSessions, sessionId);
   } catch (error) {
-    container.innerHTML = renderErrorState("Unable to load pace summary", getErrorMessage(error));
+    container.innerHTML = renderErrorState(t("pace.unableSummary"), getErrorMessage(error));
   }
 }
 
@@ -124,16 +125,16 @@ function bindPaceSessionActions(container: HTMLElement, context: AnalysisUserCon
         const paceSessionId = form.dataset.paceSessionId;
 
         if (!paceSessionId) {
-          setFormStatus(form, "Missing pace session id.", "error");
+          setFormStatus(form, t("pace.missingSessionId"), "error");
           return;
         }
 
         try {
           const payload = buildUpdatePayload(form);
           setFormDisabled(form, true);
-          setFormStatus(form, "Saving pace session...", "neutral");
+          setFormStatus(form, t("pace.savingSession"), "neutral");
           await updatePaceSession(context, paceSessionId, payload);
-          setFormStatus(form, "Pace session saved.", "success");
+          setFormStatus(form, t("pace.sessionSaved"), "success");
           setFormDisabled(form, false);
           await loadPaceLab(root, sessionId);
         } catch (error) {
@@ -152,7 +153,7 @@ function bindPaceSessionActions(container: HTMLElement, context: AnalysisUserCon
           return;
         }
 
-        if (!window.confirm("Delete this pace session?")) {
+        if (!window.confirm(t("pace.deleteConfirm"))) {
           return;
         }
 
@@ -163,7 +164,7 @@ function bindPaceSessionActions(container: HTMLElement, context: AnalysisUserCon
           await loadPaceLab(root, sessionId);
         } catch (error) {
           button.disabled = false;
-          container.insertAdjacentHTML("afterbegin", renderErrorState("Unable to delete pace session", getErrorMessage(error)));
+          container.insertAdjacentHTML("afterbegin", renderErrorState(t("pace.unableDelete"), getErrorMessage(error)));
         }
       });
     });
@@ -248,7 +249,7 @@ function readPaceForm(form: HTMLFormElement): {
       const parsed = Number(value);
 
       if (!Number.isFinite(parsed) || parsed <= 0) {
-        throw new Error("Lap times must be positive numbers.");
+        throw new Error(t("pace.positiveLapTimes"));
       }
 
       return parsed;
@@ -265,12 +266,12 @@ function renderPaceHeader(title: string, sessionId: string): string {
   return `
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Current Session</p>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("pace.currentSession")}</p>
         <h2 class="mt-2 text-xl font-black text-white">${escapeHtml(title)}</h2>
-        <p class="mt-2 text-sm text-slate-400">Pace data is scoped to session ${escapeHtml(sessionId)}.</p>
+        <p class="mt-2 text-sm text-slate-400">${t("pace.scopedToSession", { sessionId })}</p>
       </div>
       <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-bold text-slate-200 hover:border-skating-pro transition-all">
-        <i class="fa-solid fa-chart-line"></i>Session Overview
+        <i class="fa-solid fa-chart-line"></i>${t("dashboard.sessionOverview")}
       </a>
     </div>
   `;
@@ -278,7 +279,7 @@ function renderPaceHeader(title: string, sessionId: string): string {
 
 function renderPaceSessions(paceSessions: readonly PaceSession[]): string {
   if (paceSessions.length === 0) {
-    return renderEmptyState("No pace sessions yet", "Add manual lap splits to calculate total time, lap range, standard deviation, and fade index.");
+    return renderEmptyState(t("pace.emptyTitle"), t("pace.emptyDescription"));
   }
 
   return `
@@ -286,10 +287,10 @@ function renderPaceSessions(paceSessions: readonly PaceSession[]): string {
       <div class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Pace Sessions</p>
-            <h2 class="mt-1 text-2xl font-black text-white">${paceSessions.length} pace session${paceSessions.length === 1 ? "" : "s"}</h2>
+            <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400">${t("pace.sessions")}</p>
+            <h2 class="mt-1 text-2xl font-black text-white">${t("pace.sessionCount", { count: paceSessions.length })}</h2>
           </div>
-          <p class="text-sm text-slate-400">Sorted by total time</p>
+          <p class="text-sm text-slate-400">${t("pace.sortedByTotal")}</p>
         </div>
       </div>
       ${paceSessions.map(renderPaceSessionCard).join("")}
@@ -304,20 +305,20 @@ function renderPaceSessionCard(paceSession: PaceSession): string {
     <article class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl">
       <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div>
-          <h3 class="text-lg font-black text-white">${formatDistanceType(paceSession.metrics.distanceType)} Pace Session</h3>
-          <p class="mt-1 text-sm text-slate-400">${paceSession.metrics.splitTimesSeconds.length} lap${paceSession.metrics.splitTimesSeconds.length === 1 ? "" : "s"} · ${escapeHtml(paceSession.notes || "No notes")}</p>
+          <h3 class="text-lg font-black text-white">${formatDistanceType(paceSession.metrics.distanceType)} ${t("pace.session")}</h3>
+          <p class="mt-1 text-sm text-slate-400">${t("pace.lapCount", { count: paceSession.metrics.splitTimesSeconds.length })} · ${escapeHtml(paceSession.notes || t("pace.noNotes"))}</p>
         </div>
         <span class="self-start rounded-full border border-skating-pro/40 bg-purple-500/10 px-3 py-1 text-xs font-bold text-purple-200">${formatStatus(paceSession.status)}</span>
       </div>
       ${renderMetricGrid(calculated)}
       ${renderLapList(paceSession.metrics.splitTimesSeconds)}
       <details class="mt-5 rounded-xl border border-slate-700 bg-slate-950 p-4">
-        <summary class="cursor-pointer text-sm font-bold text-skating-neon">Edit pace session</summary>
+        <summary class="cursor-pointer text-sm font-bold text-skating-neon">${t("pace.editSession")}</summary>
         ${renderEditForm(paceSession)}
       </details>
       <div class="mt-4 flex justify-end">
         <button type="button" data-delete-pace-session-id="${escapeHtml(paceSession.id)}" class="inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200 hover:bg-red-500/20 transition-all">
-          <i class="fa-solid fa-trash"></i>Delete
+          <i class="fa-solid fa-trash"></i>${t("common.delete")}
         </button>
       </div>
     </article>
@@ -328,14 +329,14 @@ function renderEditForm(paceSession: PaceSession): string {
   return `
     <form data-pace-session-form data-mode="edit" data-pace-session-id="${escapeHtml(paceSession.id)}" class="mt-4 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        ${renderSelect("distanceType", "Distance", DISTANCE_TYPES, paceSession.metrics.distanceType, formatDistanceType)}
-        ${renderSelect("status", "Status", PACE_STATUSES, paceSession.status, formatStatus)}
+        ${renderSelect("distanceType", t("pace.distance"), DISTANCE_TYPES, paceSession.metrics.distanceType, formatDistanceType)}
+        ${renderSelect("status", t("common.status"), PACE_STATUSES, paceSession.status, formatStatus)}
       </div>
       <div>
         <div class="flex items-center justify-between gap-3">
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Lap Times</label>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">${t("pace.lapTimes")}</label>
           <button type="button" data-add-pace-lap class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-200 hover:border-skating-pro transition-all">
-            <i class="fa-solid fa-plus"></i>Add Lap
+            <i class="fa-solid fa-plus"></i>${t("pace.addLap")}
           </button>
         </div>
         <div data-pace-lap-list class="mt-2 space-y-2">
@@ -343,12 +344,12 @@ function renderEditForm(paceSession: PaceSession): string {
         </div>
       </div>
       <div>
-        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Notes</label>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">${t("common.notes")}</label>
         <textarea name="notes" rows="3" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">${escapeHtml(paceSession.notes ?? "")}</textarea>
       </div>
       <div class="flex flex-col sm:flex-row sm:items-center gap-3">
         <button type="submit" class="inline-flex items-center justify-center gap-2 bg-skating-pro hover:bg-purple-600 text-white font-bold rounded-xl px-5 py-3 transition-all">
-          <i class="fa-solid fa-floppy-disk"></i>Save Pace Session
+          <i class="fa-solid fa-floppy-disk"></i>${t("pace.saveSession")}
         </button>
         <p data-pace-form-status class="text-sm text-slate-400"></p>
       </div>
@@ -363,12 +364,12 @@ function renderPaceSummary(paceSessions: readonly PaceSession[], sessionId: stri
     return `
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Pace Summary</p>
-          <h2 class="mt-2 text-xl font-black text-white">0 pace sessions linked to this session</h2>
-          <p class="mt-2 text-sm text-slate-400">Add lap splits in Pace Lab to calculate manual pace metrics.</p>
+          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("pace.summary")}</p>
+          <h2 class="mt-2 text-xl font-black text-white">${t("pace.linkedSessionCount", { count: 0 })}</h2>
+          <p class="mt-2 text-sm text-slate-400">${t("pace.addSplitsSummary")}</p>
         </div>
         <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}/pace" class="inline-flex items-center justify-center gap-2 rounded-xl border border-skating-pro bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 hover:bg-purple-500/20 transition-all">
-          <i class="fa-solid fa-stopwatch"></i>Open Pace Lab
+          <i class="fa-solid fa-stopwatch"></i>${t("pace.openLab")}
         </a>
       </div>
     `;
@@ -379,12 +380,12 @@ function renderPaceSummary(paceSessions: readonly PaceSession[], sessionId: stri
   return `
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Pace Summary</p>
-        <h2 class="mt-2 text-xl font-black text-white">${paceSessions.length} pace session${paceSessions.length === 1 ? "" : "s"} linked to this session</h2>
-        <p class="mt-2 text-sm text-slate-400">Best total: ${formatSeconds(calculated.totalTimeSeconds)} · Avg lap: ${formatSeconds(calculated.averageLapTimeSeconds)} · Fade: ${formatPercent(calculated.fadeIndexPercent)}</p>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("pace.summary")}</p>
+        <h2 class="mt-2 text-xl font-black text-white">${t("pace.linkedSessionCount", { count: paceSessions.length })}</h2>
+        <p class="mt-2 text-sm text-slate-400">${t("pace.bestSummary", { total: formatSeconds(calculated.totalTimeSeconds), average: formatSeconds(calculated.averageLapTimeSeconds), fade: formatPercent(calculated.fadeIndexPercent) })}</p>
       </div>
       <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}/pace" class="inline-flex items-center justify-center gap-2 rounded-xl border border-skating-pro bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 hover:bg-purple-500/20 transition-all">
-        <i class="fa-solid fa-stopwatch"></i>Open Pace Lab
+        <i class="fa-solid fa-stopwatch"></i>${t("pace.openLab")}
       </a>
     </div>
   `;
@@ -392,13 +393,13 @@ function renderPaceSummary(paceSessions: readonly PaceSession[], sessionId: stri
 
 function renderMetricGrid(calculated: CalculatedPaceMetrics): string {
   const metrics = [
-    { label: "Total Time", value: formatSeconds(calculated.totalTimeSeconds) },
-    { label: "Average Lap", value: formatSeconds(calculated.averageLapTimeSeconds) },
-    { label: "Fastest Lap", value: formatSeconds(calculated.fastestLapSeconds) },
-    { label: "Slowest Lap", value: formatSeconds(calculated.slowestLapSeconds) },
-    { label: "Lap Range", value: formatSeconds(calculated.lapTimeRangeSeconds) },
-    { label: "Lap Std Dev", value: formatSeconds(calculated.lapTimeStdDevSeconds) },
-    { label: "Fade Index", value: formatPercent(calculated.fadeIndexPercent) },
+    { label: t("pace.totalTime"), value: formatSeconds(calculated.totalTimeSeconds) },
+    { label: t("pace.averageLap"), value: formatSeconds(calculated.averageLapTimeSeconds) },
+    { label: t("pace.fastestLap"), value: formatSeconds(calculated.fastestLapSeconds) },
+    { label: t("pace.slowestLap"), value: formatSeconds(calculated.slowestLapSeconds) },
+    { label: t("pace.lapRange"), value: formatSeconds(calculated.lapTimeRangeSeconds) },
+    { label: t("pace.lapStdDev"), value: formatSeconds(calculated.lapTimeStdDevSeconds) },
+    { label: t("pace.fadeIndex"), value: formatPercent(calculated.fadeIndexPercent) },
   ];
 
   return `
@@ -416,9 +417,9 @@ function renderMetricGrid(calculated: CalculatedPaceMetrics): string {
 function renderLapList(lapTimesSeconds: readonly number[]): string {
   return `
     <div class="mt-4">
-      <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Laps</p>
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("pace.laps")}</p>
       <div class="mt-2 flex flex-wrap gap-2">
-        ${lapTimesSeconds.map((lapTime, index) => `<span class="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs font-bold text-slate-300">Lap ${index + 1}: ${formatSeconds(lapTime)}</span>`).join("")}
+        ${lapTimesSeconds.map((lapTime, index) => `<span class="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs font-bold text-slate-300">${t("pace.lapNumber", { lapNumber: index + 1 })}: ${formatSeconds(lapTime)}</span>`).join("")}
       </div>
     </div>
   `;
@@ -427,8 +428,8 @@ function renderLapList(lapTimesSeconds: readonly number[]): string {
 function renderLapRow(lapNumber: number, value: number | string = ""): string {
   return `
     <div data-pace-lap-row class="flex items-center gap-2">
-      <input name="lapTimesSeconds" type="number" min="0.01" step="0.01" required placeholder="Lap ${lapNumber} seconds" value="${escapeHtml(String(value))}" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
-      <button type="button" data-remove-pace-lap class="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-400 hover:text-red-200 hover:border-red-500/40 transition-all" aria-label="Remove lap">
+      <input name="lapTimesSeconds" type="number" min="0.01" step="0.01" required placeholder="${t("pace.lapSecondsPlaceholder", { lapNumber })}" value="${escapeHtml(String(value))}" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-skating-pro">
+      <button type="button" data-remove-pace-lap class="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-400 hover:text-red-200 hover:border-red-500/40 transition-all" aria-label="${t("pace.removeLap")}">
         <i class="fa-solid fa-minus"></i>
       </button>
     </div>
@@ -465,7 +466,7 @@ function addLapRow(form: HTMLFormElement): void {
 function updateLapPlaceholders(form: HTMLFormElement): void {
   form.querySelectorAll<HTMLInputElement>('input[name="lapTimesSeconds"]')
     .forEach((input, index) => {
-      input.placeholder = `Lap ${index + 1} seconds`;
+      input.placeholder = t("pace.lapSecondsPlaceholder", { lapNumber: index + 1 });
     });
 }
 
@@ -545,14 +546,7 @@ function formatDistanceType(distanceType: PaceDistanceType): string {
 }
 
 function formatStatus(status: PaceSessionStatus): string {
-  const labels = {
-    draft: "Draft",
-    completed: "Completed",
-    reviewed: "Reviewed",
-    archived: "Archived",
-  } as const;
-
-  return labels[status];
+  return optionLabel(status);
 }
 
 function getTotalTime(paceSession: PaceSession): number {
@@ -568,5 +562,5 @@ function formatPercent(value: number): string {
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unexpected Pace Lab error.";
+  return error instanceof Error ? error.message : t("pace.unexpectedError");
 }

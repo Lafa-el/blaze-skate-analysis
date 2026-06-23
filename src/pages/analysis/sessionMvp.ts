@@ -12,6 +12,7 @@ import type {
   AnalysisTimestamp,
 } from "../../types/analysis";
 import { escapeAttribute, escapeHtml } from "./html";
+import { optionLabel, t } from "./i18n";
 import type { PageRenderContext } from "./pageShell";
 import { renderSessionFormFields } from "./NewAnalysisSessionPage";
 
@@ -54,9 +55,9 @@ function bindCreateForm(root: HTMLElement, navigate: Navigate): void {
       const context = await getAnalysisUserContext();
       const payload = buildCreatePayload(form, context);
       setFormDisabled(form, true);
-      setFormStatus(form, "Creating session...", "neutral");
+      setFormStatus(form, t("sessions.creating"), "neutral");
       const session = await createAnalysisSession(context, payload);
-      setFormStatus(form, "Session created.", "success");
+      setFormStatus(form, t("sessions.created"), "success");
       navigate(`/analysis/sessions/${session.id}`);
     } catch (error) {
       setFormStatus(form, getErrorMessage(error), "error");
@@ -86,9 +87,7 @@ function bindArchiveSessionActions(root: HTMLElement, navigate: Navigate): void 
       return;
     }
 
-    const confirmed = window.confirm(
-      "Archive this Analysis Session? It will be hidden from the active workflow, but linked biomechanics, pace, equipment, report, and video data will be preserved.",
-    );
+    const confirmed = window.confirm(t("sessions.archiveConfirm"));
 
     if (!confirmed) {
       return;
@@ -98,8 +97,8 @@ function bindArchiveSessionActions(root: HTMLElement, navigate: Navigate): void 
     const status = findArchiveStatus(target);
 
     target.disabled = true;
-    target.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>Archiving...`;
-    setArchiveStatus(status, "Archiving session...", "neutral");
+    target.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>${t("sessions.archiving")}`;
+    setArchiveStatus(status, t("sessions.archivingStatus"), "neutral");
 
     try {
       const context = await getAnalysisUserContext();
@@ -125,7 +124,7 @@ async function loadSessionList(root: HTMLElement): Promise<void> {
     const sessions = await loadSessions(context);
     container.innerHTML = renderSessionList(sessions);
   } catch (error) {
-    container.innerHTML = renderErrorState("Unable to load sessions", getErrorMessage(error));
+    container.innerHTML = renderErrorState(t("sessions.unableLoad"), getErrorMessage(error));
   }
 }
 
@@ -147,14 +146,14 @@ async function loadDashboardSessions(root: HTMLElement): Promise<void> {
     }
 
     container.innerHTML = recentSessions.length > 0
-      ? renderSessionList(recentSessions, "Recent sessions")
-      : renderEmptyState("No analysis sessions yet", "Create the first Analysis V1 session to start building the review workflow.");
+      ? renderSessionList(recentSessions, t("sessions.recentListTitle"))
+      : renderEmptyState(t("sessions.emptyTitle"), t("sessions.emptyDescription"));
   } catch (error) {
     if (count) {
       count.textContent = "!";
     }
 
-    container.innerHTML = renderErrorState("Unable to load dashboard sessions", getErrorMessage(error));
+    container.innerHTML = renderErrorState(t("sessions.unableDashboard"), getErrorMessage(error));
   }
 }
 
@@ -170,7 +169,7 @@ async function loadSessionDetail(container: HTMLElement, sessionId: string): Pro
     const session = await getAnalysisSession(context, sessionId);
 
     if (!session) {
-      state.innerHTML = renderEmptyState("Session not found", "The requested Analysis V1 session does not exist for this athlete.");
+      state.innerHTML = renderEmptyState(t("sessions.notFoundTitle"), t("sessions.notFoundDescription"));
       renderMissingSessionSummaries(container);
       return;
     }
@@ -186,9 +185,9 @@ async function loadSessionDetail(container: HTMLElement, sessionId: string): Pro
         try {
           const payload = buildUpdatePayload(form);
           setFormDisabled(form, true);
-          setFormStatus(form, "Saving session...", "neutral");
+          setFormStatus(form, t("sessions.saving"), "neutral");
           await updateAnalysisSession(context, session.id, payload);
-          setFormStatus(form, "Session saved.", "success");
+          setFormStatus(form, t("sessions.saved"), "success");
           setFormDisabled(form, false);
         } catch (error) {
           setFormStatus(form, getErrorMessage(error), "error");
@@ -197,7 +196,7 @@ async function loadSessionDetail(container: HTMLElement, sessionId: string): Pro
       });
     }
   } catch (error) {
-    state.innerHTML = renderErrorState("Unable to load session", getErrorMessage(error));
+    state.innerHTML = renderErrorState(t("sessions.unableLoadSession"), getErrorMessage(error));
   }
 }
 
@@ -261,11 +260,11 @@ function readSessionForm(form: HTMLFormElement): {
     .filter(Boolean);
 
   if (!title) {
-    throw new Error("Title is required.");
+    throw new Error(t("sessions.titleRequired"));
   }
 
   if (!date) {
-    throw new Error("Date is required.");
+    throw new Error(t("sessions.dateRequired"));
   }
 
   return {
@@ -278,9 +277,9 @@ function readSessionForm(form: HTMLFormElement): {
   };
 }
 
-function renderSessionList(sessions: readonly AnalysisSession[], title = "Active sessions"): string {
+function renderSessionList(sessions: readonly AnalysisSession[], title = t("sessions.activeListTitle")): string {
   if (sessions.length === 0) {
-    return renderEmptyState("No active sessions to display", "Create a new Analysis V1 session to populate this list. Archived sessions are hidden from the active workflow.");
+    return renderEmptyState(t("sessions.emptyTitle"), t("sessions.emptyDescription"));
   }
 
   return `
@@ -295,7 +294,7 @@ function renderSessionList(sessions: readonly AnalysisSession[], title = "Active
 
 function renderSessionCard(session: AnalysisSession): string {
   const sessionHref = `/analysis/sessions/${encodeURIComponent(session.id)}`;
-  const focusAreas = session.tags?.length ? session.tags.map((tag) => `<span class="rounded-full bg-slate-900 border border-slate-700 px-2.5 py-1 text-xs text-slate-300">${escapeHtml(tag)}</span>`).join("") : `<span class="text-xs text-slate-500">No focus areas</span>`;
+  const focusAreas = session.tags?.length ? session.tags.map((tag) => `<span class="rounded-full bg-slate-900 border border-slate-700 px-2.5 py-1 text-xs text-slate-300">${escapeHtml(tag)}</span>`).join("") : `<span class="text-xs text-slate-500">${t("sessions.noFocusAreas")}</span>`;
 
   return `
     <article data-session-card class="bg-skating-card border border-slate-700 rounded-2xl p-5 shadow-xl transition-all">
@@ -307,15 +306,15 @@ function renderSessionCard(session: AnalysisSession): string {
           </div>
           <span class="self-start rounded-full border border-skating-pro/40 bg-purple-500/10 px-3 py-1 text-xs font-bold text-purple-200">${formatStatus(session.status)}</span>
         </div>
-        <p class="mt-3 text-sm text-slate-400 leading-relaxed">${escapeHtml(session.summary || "No summary yet.")}</p>
+        <p class="mt-3 text-sm text-slate-400 leading-relaxed">${escapeHtml(session.summary || t("sessions.noSummary"))}</p>
         <div class="mt-4 flex flex-wrap gap-2">${focusAreas}</div>
       </a>
       <div class="mt-5 flex flex-col gap-3 border-t border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <a data-analysis-link href="${escapeAttribute(sessionHref)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-bold text-slate-200 hover:border-skating-pro transition-all">
-          <i class="fa-solid fa-arrow-right"></i>Open
+          <i class="fa-solid fa-arrow-right"></i>${t("common.open")}
         </a>
         <button type="button" data-archive-session-id="${escapeAttribute(session.id)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-200 hover:bg-amber-500/20 transition-all">
-          <i class="fa-solid fa-box-archive"></i>Archive
+          <i class="fa-solid fa-box-archive"></i>${t("common.archive")}
         </button>
         <p data-session-archive-status class="text-sm text-slate-400 sm:ml-auto"></p>
       </div>
@@ -327,12 +326,12 @@ function renderSessionDetail(session: AnalysisSession): string {
   const archiveAction = session.status === "archived"
     ? `
       <button type="button" disabled class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 font-bold text-slate-400 cursor-not-allowed">
-        <i class="fa-solid fa-box-archive"></i>Archived
+        <i class="fa-solid fa-box-archive"></i>${t("common.archived")}
       </button>
     `
     : `
       <button type="button" data-archive-session-id="${escapeAttribute(session.id)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-5 py-3 font-bold text-amber-200 hover:bg-amber-500/20 transition-all">
-        <i class="fa-solid fa-box-archive"></i>Archive Session
+        <i class="fa-solid fa-box-archive"></i>${t("common.archiveSession")}
       </button>
     `;
 
@@ -340,15 +339,15 @@ function renderSessionDetail(session: AnalysisSession): string {
     <div class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="rounded-2xl bg-slate-900 border border-slate-700 p-4">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Date</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("common.date")}</p>
           <p class="mt-2 text-lg font-black text-white">${formatDate(session.startedAt)}</p>
         </div>
         <div class="rounded-2xl bg-slate-900 border border-slate-700 p-4">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Type</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("common.type")}</p>
           <p class="mt-2 text-lg font-black text-white">${formatCategory(session.category)}</p>
         </div>
         <div class="rounded-2xl bg-slate-900 border border-slate-700 p-4">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Status</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">${t("common.status")}</p>
           <p class="mt-2 text-lg font-black text-white">${formatStatus(session.status)}</p>
         </div>
       </div>
@@ -356,7 +355,7 @@ function renderSessionDetail(session: AnalysisSession): string {
         ${renderSessionFormFields()}
         <div class="lg:col-span-2 flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
           <button type="submit" class="inline-flex items-center justify-center gap-2 bg-skating-pro hover:bg-purple-600 text-white font-bold rounded-xl px-5 py-3 transition-all">
-            <i class="fa-solid fa-floppy-disk"></i>Save Changes
+            <i class="fa-solid fa-floppy-disk"></i>${t("common.saveChanges")}
           </button>
           ${archiveAction}
           <p data-session-form-status class="text-sm text-slate-400"></p>
@@ -442,7 +441,7 @@ function renderMissingSessionSummaries(container: HTMLElement): void {
 
   summaryContainers.forEach((summary) => {
     if (summary) {
-      summary.innerHTML = renderEmptyState("Session not found", "Linked Analysis V1 lab summaries are hidden because the parent session does not exist.");
+      summary.innerHTML = renderEmptyState(t("sessions.notFoundTitle"), t("sessions.hiddenSummaries"));
     }
   });
 }
@@ -506,35 +505,20 @@ function formatDate(value: AnalysisTimestamp): string {
   const date = new Date(getTimestampMs(value));
 
   if (Number.isNaN(date.getTime())) {
-    return "Date unavailable";
+    return t("common.dateUnavailable");
   }
 
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function formatCategory(category: AnalysisCategory): string {
-  const labels = {
-    biomechanics: "Biomechanics",
-    pace: "Pace",
-    equipment: "Equipment",
-    composite: "Composite",
-  } as const;
-
-  return labels[category];
+  return optionLabel(category);
 }
 
 function formatStatus(status: AnalysisSessionStatus): string {
-  const labels = {
-    draft: "Draft",
-    processing: "Processing",
-    ready: "Ready",
-    reviewed: "Reviewed",
-    archived: "Archived",
-  } as const;
-
-  return labels[status];
+  return optionLabel(status);
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unexpected Analysis Session error.";
+  return error instanceof Error ? error.message : t("common.unexpectedSessionError");
 }

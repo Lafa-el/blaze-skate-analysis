@@ -1,4 +1,5 @@
 import { encodePathSegment, escapeAttribute, escapeHtml } from "./html";
+import { t } from "./i18n";
 
 export interface PageAction {
   readonly label: string;
@@ -81,11 +82,11 @@ export function renderMetricCards(cards: readonly { label: string; value: string
 export function renderSessionTabs(sessionId: string, active: "overview" | "biomechanics" | "pace" | "equipment" | "report"): string {
   const encodedSessionId = encodePathSegment(sessionId);
   const tabs = [
-    { id: "overview", label: "Session Overview", href: `/analysis/sessions/${encodedSessionId}`, icon: "fa-chart-line" },
-    { id: "biomechanics", label: "Biomechanics", href: `/analysis/sessions/${encodedSessionId}/biomechanics`, icon: "fa-microscope" },
-    { id: "pace", label: "Pace", href: `/analysis/sessions/${encodedSessionId}/pace`, icon: "fa-stopwatch" },
-    { id: "equipment", label: "Equipment", href: `/analysis/sessions/${encodedSessionId}/equipment`, icon: "fa-screwdriver-wrench" },
-    { id: "report", label: "Report", href: `/analysis/sessions/${encodedSessionId}/report`, icon: "fa-file-lines" },
+    { id: "overview", label: t("tabs.overview"), href: `/analysis/sessions/${encodedSessionId}`, icon: "fa-chart-line" },
+    { id: "biomechanics", label: t("tabs.biomechanics"), href: `/analysis/sessions/${encodedSessionId}/biomechanics`, icon: "fa-microscope" },
+    { id: "pace", label: t("tabs.pace"), href: `/analysis/sessions/${encodedSessionId}/pace`, icon: "fa-stopwatch" },
+    { id: "equipment", label: t("tabs.equipment"), href: `/analysis/sessions/${encodedSessionId}/equipment`, icon: "fa-screwdriver-wrench" },
+    { id: "report", label: t("tabs.report"), href: `/analysis/sessions/${encodedSessionId}/report`, icon: "fa-file-lines" },
   ] as const;
 
   return `

@@ -19,6 +19,7 @@ import {
   type ReportSourceData,
 } from "../../utils/analysisReportGenerator";
 import { escapeHtml } from "./html";
+import { optionLabel, t } from "./i18n";
 import type { PageRenderContext } from "./pageShell";
 
 interface ReportPageState {
@@ -61,12 +62,12 @@ function bindReportForm(root: HTMLElement, sessionId: string): void {
     const state = reportStates.get(root);
 
     if (!state) {
-      setFormStatus(form, "Report source data is still loading.", "error");
+      setFormStatus(form, t("report.sourceLoading"), "error");
       return;
     }
 
     populateReportForm(root, state.generatedDraft, null);
-    setFormStatus(form, "Draft regenerated from current lab data.", "success");
+    setFormStatus(form, t("report.draftRegenerated"), "success");
   });
 
   root.querySelector<HTMLButtonElement>("[data-finalize-report]")?.addEventListener("click", async () => {
@@ -82,12 +83,12 @@ function bindReportForm(root: HTMLElement, sessionId: string): void {
 
     try {
       await navigator.clipboard.writeText(markdown);
-      setFormStatus(form, "Markdown copied.", "success");
+      setFormStatus(form, t("report.markdownCopied"), "success");
     } catch {
       const exportField = root.querySelector<HTMLTextAreaElement>("[data-report-markdown]");
       exportField?.select();
       document.execCommand("copy");
-      setFormStatus(form, "Markdown selected and copied if clipboard fallback is available.", "neutral");
+      setFormStatus(form, t("report.markdownFallbackCopied"), "neutral");
     }
   });
 
@@ -105,7 +106,7 @@ async function loadReportPage(root: HTMLElement, sessionId: string): Promise<voi
     return;
   }
 
-  sourceSummary.innerHTML = renderLoadingState("Loading report source data...");
+  sourceSummary.innerHTML = renderLoadingState(t("report.loadingSourceData"));
   setFormDisabled(form, true);
 
   try {
@@ -114,10 +115,10 @@ async function loadReportPage(root: HTMLElement, sessionId: string): Promise<voi
 
     if (!session) {
       if (header) {
-        header.innerHTML = renderErrorState("Session not found", "The requested Analysis V1 session does not exist.");
+        header.innerHTML = renderErrorState(t("sessions.notFoundTitle"), t("sessions.notFoundDescription"));
       }
 
-      sourceSummary.innerHTML = renderEmptyState("No report source available", "Create or open a valid Analysis Session before generating a report.");
+      sourceSummary.innerHTML = renderEmptyState(t("report.noSourceTitle"), t("report.noSourceDescription"));
       return;
     }
 
@@ -152,10 +153,10 @@ async function loadReportPage(root: HTMLElement, sessionId: string): Promise<voi
     setFormDisabled(form, false);
   } catch (error) {
     if (header) {
-      header.innerHTML = renderErrorState("Unable to load report", getErrorMessage(error));
+      header.innerHTML = renderErrorState(t("report.unableLoad"), getErrorMessage(error));
     }
 
-    sourceSummary.innerHTML = renderErrorState("Unable to load report source data", getErrorMessage(error));
+    sourceSummary.innerHTML = renderErrorState(t("report.unableSource"), getErrorMessage(error));
     setFormDisabled(form, false);
   }
 }
@@ -166,7 +167,7 @@ async function loadReportSummary(container: HTMLElement, sessionId: string): Pro
     const report = await getAnalysisReportBySession(context, sessionId);
     container.innerHTML = renderReportSummary(report, sessionId);
   } catch (error) {
-    container.innerHTML = renderErrorState("Unable to load report summary", getErrorMessage(error));
+    container.innerHTML = renderErrorState(t("report.unableSummary"), getErrorMessage(error));
   }
 }
 
@@ -183,7 +184,7 @@ async function saveReport(root: HTMLElement, sessionId: string, status: Analysis
 
   try {
     setFormDisabled(form, true);
-    setFormStatus(form, status === "reviewed" ? "Marking report final..." : "Saving draft report...", "neutral");
+    setFormStatus(form, status === "reviewed" ? t("report.markingFinal") : t("report.savingDraft"), "neutral");
 
     if (state.savedReport) {
       await updateAnalysisReport(state.context, state.savedReport.id, payload);
@@ -199,7 +200,7 @@ async function saveReport(root: HTMLElement, sessionId: string, status: Analysis
       });
     }
 
-    setFormStatus(form, status === "reviewed" ? "Report marked final." : "Draft report saved.", "success");
+    setFormStatus(form, status === "reviewed" ? t("report.markedFinal") : t("report.draftSaved"), "success");
     await loadReportPage(root, sessionId);
   } catch (error) {
     setFormStatus(form, getErrorMessage(error), "error");
@@ -260,11 +261,11 @@ function readReportForm(form: HTMLFormElement): EditableReportFields {
   const keyRecommendations = splitLines(getNamedFieldValue(form, "keyRecommendations"));
 
   if (!title) {
-    throw new Error("Report title is required.");
+    throw new Error(t("report.titleRequired"));
   }
 
   if (!summary) {
-    throw new Error("Report summary is required.");
+    throw new Error(t("report.summaryRequired"));
   }
 
   return {
@@ -278,26 +279,26 @@ function renderReportHeader(title: string, sessionId: string): string {
   return `
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Current Session</p>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("pace.currentSession")}</p>
         <h2 class="mt-2 text-xl font-black text-white">${escapeHtml(title)}</h2>
-        <p class="mt-2 text-sm text-slate-400">Report data is scoped to session ${escapeHtml(sessionId)}.</p>
+        <p class="mt-2 text-sm text-slate-400">${t("report.scopedToSession", { sessionId })}</p>
       </div>
       <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-bold text-slate-200 hover:border-skating-pro transition-all">
-        <i class="fa-solid fa-chart-line"></i>Session Overview
+        <i class="fa-solid fa-chart-line"></i>${t("dashboard.sessionOverview")}
       </a>
     </div>
   `;
 }
 
 function renderSourceSummary(source: ReportSourceData, savedReport: AnalysisReport | null): string {
-  const reportStatus = savedReport ? formatReportStatus(savedReport.status) : "Unsaved generated draft";
+  const reportStatus = savedReport ? formatReportStatus(savedReport.status) : t("report.unsavedDraft");
 
   return `
     <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-      ${renderMetricTile("Biomechanics", `${source.findings.length}`, "findings")}
-      ${renderMetricTile("Pace", `${source.paceSessions.length}`, "sessions")}
-      ${renderMetricTile("Equipment", source.equipmentSnapshot ? "1" : "0", "snapshot")}
-      ${renderMetricTile("Report", reportStatus, "status")}
+      ${renderMetricTile(t("tabs.biomechanics"), `${source.findings.length}`, t("report.findingsHint"))}
+      ${renderMetricTile(t("tabs.pace"), `${source.paceSessions.length}`, t("report.sessionsHint"))}
+      ${renderMetricTile(t("tabs.equipment"), source.equipmentSnapshot ? "1" : "0", t("report.snapshotHint"))}
+      ${renderMetricTile(t("tabs.report"), reportStatus, t("common.status"))}
     </div>
   `;
 }
@@ -307,12 +308,12 @@ function renderReportSummary(report: AnalysisReport | null, sessionId: string): 
     return `
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Report Summary</p>
-          <h2 class="mt-2 text-xl font-black text-white">No saved report yet</h2>
-          <p class="mt-2 text-sm text-slate-400">Generate a deterministic draft from session lab data.</p>
+          <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("report.summary")}</p>
+          <h2 class="mt-2 text-xl font-black text-white">${t("report.noSavedYet")}</h2>
+          <p class="mt-2 text-sm text-slate-400">${t("report.generateFromLabData")}</p>
         </div>
         <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}/report" class="inline-flex items-center justify-center gap-2 rounded-xl border border-skating-pro bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 hover:bg-purple-500/20 transition-all">
-          <i class="fa-solid fa-file-lines"></i>Open Report
+          <i class="fa-solid fa-file-lines"></i>${t("report.openReport")}
         </a>
       </div>
     `;
@@ -321,12 +322,12 @@ function renderReportSummary(report: AnalysisReport | null, sessionId: string): 
   return `
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">Report Summary</p>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-skating-neon">${t("report.summary")}</p>
         <h2 class="mt-2 text-xl font-black text-white">${escapeHtml(report.title)}</h2>
-        <p class="mt-2 text-sm text-slate-400">Status: ${escapeHtml(formatReportStatus(report.status))} · Recommendations: ${report.keyRecommendations.length}</p>
+        <p class="mt-2 text-sm text-slate-400">${t("common.status")}: ${escapeHtml(formatReportStatus(report.status))} · ${t("common.recommendations")}: ${report.keyRecommendations.length}</p>
       </div>
       <a data-analysis-link href="/analysis/sessions/${encodeURIComponent(sessionId)}/report" class="inline-flex items-center justify-center gap-2 rounded-xl border border-skating-pro bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 hover:bg-purple-500/20 transition-all">
-        <i class="fa-solid fa-file-lines"></i>Open Report
+        <i class="fa-solid fa-file-lines"></i>${t("report.openReport")}
       </a>
     </div>
   `;
@@ -455,17 +456,9 @@ function severityRank(severity: BiomechanicsFinding["severity"]): number {
 }
 
 function formatReportStatus(status: AnalysisReportStatus): string {
-  const labels = {
-    draft: "Draft",
-    generated: "Generated",
-    reviewed: "Final",
-    shared: "Shared",
-    archived: "Archived",
-  } as const;
-
-  return labels[status];
+  return status === "reviewed" ? t("option.final") : optionLabel(status);
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unexpected Analysis Report error.";
+  return error instanceof Error ? error.message : t("report.unexpectedError");
 }
