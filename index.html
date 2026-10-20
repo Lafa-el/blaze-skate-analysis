@@ -213,6 +213,53 @@
         body[data-analysis-route="active"] > div:not(#analysis-v1-root) {
             display: none !important;
         }
+        /* The analysis route hides sibling divs. The banner is an aside so it stays on both pages. */
+        #migration-banner {
+            align-self: stretch;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem 1rem;
+            box-sizing: border-box;
+            margin: -1rem -1rem 1rem;
+            padding: 0.75rem 1rem;
+            background: #7f1d1d;
+            color: #fff7ed;
+            border-bottom: 1px solid #fecaca;
+        }
+        #migration-banner p {
+            margin: 0;
+            flex: 1 1 16rem;
+            font-size: 0.92rem;
+            line-height: 1.45;
+            font-weight: 600;
+        }
+        #migration-banner a {
+            flex: 0 0 auto;
+            display: inline-block;
+            padding: 0.45rem 0.9rem;
+            border-radius: 999px;
+            background: #fff7ed;
+            color: #7f1d1d;
+            font-size: 0.875rem;
+            font-weight: 700;
+            line-height: 1.2;
+            text-decoration: none;
+        }
+        #migration-banner a:hover,
+        #migration-banner a:focus-visible {
+            background: #ffffff;
+            outline: 2px solid #fff7ed;
+            outline-offset: 2px;
+        }
+        @media (min-width: 640px) {
+            #migration-banner {
+                margin-top: -2rem;
+                margin-left: -2rem;
+                margin-right: -2rem;
+            }
+        }
         #analysis-v1-root {
             display: none;
             width: 100%;
@@ -392,6 +439,11 @@
 </head>
 
 <body class="min-h-screen flex flex-col items-center p-4 sm:p-8">
+
+    <aside id="migration-banner">
+        <p>本站已迁移至 SkatingX 新平台，数据已全部搬走。自 2026 年 10 月 20 日起本站只读保留，不再保存新数据。</p>
+        <a href="https://skatingx-platform-web.vercel.app">前往新平台</a>
+    </aside>
 
     <div id="analysis-v1-root"></div>
 
